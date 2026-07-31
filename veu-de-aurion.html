@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Véu de Áurion — Simulação Intergaláctica</title>
+<style>
+  :root{
+    --ink: #eef1ff;
+    --dim: rgba(238,241,255,.52);
+    --hair: rgba(238,241,255,.16);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; background:#03030a; overflow:hidden; }
+  body{
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    touch-action:none;
+    cursor:grab;
+  }
+  body.dragging{ cursor:grabbing; }
+  canvas{ position:fixed; inset:0; width:100%; height:100%; display:block; }
+
+  /* ---- véu de entrada ---- */
+  #curtain{
+    position:fixed; inset:0; background:#03030a; z-index:9;
+    pointer-events:none; animation: fadeout 2.6s .35s ease-out forwards;
+  }
+  @keyframes fadeout{ to{ opacity:0; } }
+
+  /* ---- interface ---- */
+  .ui{ position:fixed; z-index:10; pointer-events:none; opacity:0; animation: rise 1.6s 1.5s cubic-bezier(.16,1,.3,1) forwards; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
+  body.clean .ui{ opacity:0; transition:opacity .5s ease; }
+
+  #head{ top:clamp(20px,4vh,44px); left:clamp(20px,4vw,52px); max-width:min(78vw,520px); }
+  .kicker{
+    font-size:10.5px; letter-spacing:.3em; text-transform:uppercase;
+    color:var(--dim); margin:0 0 14px; white-space:nowrap;
+  }
+  .kicker b{ font-weight:500; color:rgba(255,214,150,.85); }
+  h1{
+    margin:0; font-weight:200; letter-spacing:-.02em;
+    font-size:clamp(38px,7.2vw,86px); line-height:.94;
+    background:linear-gradient(96deg,#fff 8%,#ffd9a8 34%,#8fd6ff 66%,#e6a8ff 96%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 60px rgba(150,190,255,.18);
+  }
+  .sub{
+    margin:16px 0 0; font-size:clamp(11px,1.5vw,15px); font-weight:300;
+    letter-spacing:.24em; color:rgba(238,241,255,.6);
+  }
+  #head p:not(.kicker):not(.sub){
+    margin:18px 0 0; max-width:38ch; font-size:13px; line-height:1.7;
+    color:var(--dim); font-weight:300;
+  }
+  .rule{ width:64px; height:1px; background:linear-gradient(90deg,rgba(255,214,150,.7),transparent); margin:22px 0 0; }
+
+  #hud{
+    right:clamp(20px,4vw,52px); bottom:clamp(20px,4vh,40px); text-align:right;
+    font-size:11px; letter-spacing:.06em; color:var(--dim); line-height:2.1;
+  }
+  #hud kbd{
+    font:inherit; font-size:10px; letter-spacing:.1em;
+    border:1px solid var(--hair); border-radius:5px; padding:2px 7px; margin-left:8px;
+    color:var(--ink); background:rgba(255,255,255,.035);
+  }
+  #stamp{
+    left:clamp(20px,4vw,52px); bottom:clamp(20px,4vh,40px);
+    font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:rgba(238,241,255,.3);
+  }
+  #stamp span{ color:rgba(143,214,255,.6); }
+
+  /* seletor de paleta */
+  #palettes{
+    right:clamp(20px,4vw,52px); top:clamp(20px,4vh,44px);
+    display:flex; gap:10px; pointer-events:auto;
+  }
+  .sw{
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--hair);
+    padding:0; cursor:pointer; position:relative; background-clip:padding-box;
+    transition:transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
+  }
+  .sw:hover{ transform:scale(1.14); }
+  .sw[aria-pressed="true"]{ box-shadow:0 0 0 1px rgba(238,241,255,.55), 0 0 22px rgba(255,255,255,.22); }
+  @media (max-width:720px){
+    #hud{ display:none; }
+    #head p:not(.kicker):not(.sub){ display:none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="curtain"></div>
+
+<header class="ui" id="head">
+  <p class="kicker"><b>Setor 9</b> &nbsp;·&nbsp; travessia lenta</p>
+  <h1>Véu de Áurion</h1>
+  <p class="sub">simulação intergaláctica</p>
+  <p>Um disco espiral de poeira e gás renderizado por marcha volumétrica em tempo real — mais retrato do que medida. Nada aqui é fisicamente correto; tudo aqui é intencional.</p>
+  <div class="rule"></div>
+</header>
+
+<div class="ui" id="palettes" role="group" aria-label="Paletas">
+  <button class="sw" data-p="0" aria-pressed="true"  title="Áurion" style="background:conic-gradient(#ffd9a8,#8fd6ff,#e6a8ff,#ffd9a8)"></button>
+  <button class="sw" data-p="1" aria-pressed="false" title="Cinzas de Vela" style="background:conic-gradient(#fff0d0,#ff9d6b,#ff5f9e,#fff0d0)"></button>
+  <button class="sw" data-p="2" aria-pressed="false" title="Maré Fria" style="background:conic-gradient(#eafcff,#6ee7f9,#7b8dff,#eafcff)"></button>
+</div>
+
+<div class="ui" id="hud">
+  arraste para orbitar<kbd>drag</kbd><br>
+  aproximar<kbd>scroll</kbd><br>
+  esconder interface<kbd>H</kbd><br>
+  tela cheia<kbd>F</kbd>
+</div>
+<div class="ui" id="stamp">obs. <span>áurion</span> — 1&thinsp;284 anos-luz</div>
+
+<script>
+/* ============================================================
+   VÉU DE ÁURION
+   Galáxia volumétrica, nebulosa e mundo anelado em um único
+   fragment shader. Sem dependências, sem texturas, sem rede.
+   ============================================================ */
+
+const VERT = `#version 300 es
+void main(){
+  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+
+const FRAG = `#version 300 es
+precision highp float;
+out vec4 fragColor;
+
+uniform vec2  uRes;
+uniform float uTime;
+uniform vec2  uOrbit;     // yaw, pitch
+uniform float uDist;      // distancia da camera
+uniform vec3  uCoreCol;   // paleta: nucleo
+uniform vec3  uArmCol;    // paleta: bracos
+uniform vec3  uRimCol;    // paleta: periferia
+
+#define STEPS 78
+#define PI 3.14159265359
+
+/* ---------------- ruido ---------------- */
+float hash13(vec3 p3){
+  p3 = fract(p3 * 0.1031);
+  p3 += dot(p3, p3.zyx + 31.32);
+  return fract((p3.x + p3.y) * p3.z);
+}
+vec3 hash33(vec3 p3){
+  p3 = fract(p3 * vec3(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yxz + 33.33);
+  return fract((p3.xxy + p3.yxx) * p3.zyx);
+}
+float vnoise(vec3 x){
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(hash13(i), hash13(i + vec3(1,0,0)), f.x),
+                 mix(hash13(i + vec3(0,1,0)), hash13(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x),
+                 mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+const mat3 ROT = mat3( 0.00, 0.80, 0.60,
+                      -0.80, 0.36,-0.48,
+                      -0.60,-0.48, 0.64);
+float fbm4(vec3 p){
+  float a = 0.5, s = 0.0;
+  for(int i = 0; i < 4; i++){ s += a * vnoise(p); p = ROT * p * 2.03; a *= 0.5; }
+  return s;
+}
+float fbm3(vec3 p){
+  float a = 0.5, s = 0.0;
+  for(int i = 0; i < 3; i++){ s += a * vnoise(p); p = ROT * p * 2.07; a *= 0.5; }
+  return s;
+}
+
+/* ---------------- o disco ---------------- */
+// rotacao rigida em torno de y. O padrao espiral gira inteiro, como uma
+// onda de densidade: nada de cisalhamento acumulando com o tempo.
+vec3 giro(vec3 p, float a){
+  float c = cos(a), s = sin(a);
+  return vec3(c * p.x - s * p.z, p.y, s * p.x + c * p.z);
+}
+
+float disco(vec3 p, out vec3 emis){
+  float r = length(p.xz);
+  vec3 q = giro(p, uTime * 0.055);                             // padrao dos bracos
+  // a poeira vive num espaco ja torcido em espiral: os filamentos nascem
+  // alinhados aos bracos e a torcao nao cresce com o tempo
+  vec3 qd = giro(p, uTime * 0.088 - 1.7 * log(r + 0.30));
+
+  // dobra o espaco antes de medir os bracos: turbulencia grande
+  vec3 w = q + (fbm3(q * 0.55 + vec3(0.0, uTime * 0.012, 0.0)) - 0.5) * 0.55;
+  float ang = atan(w.z, w.x);
+
+  // espiral logaritmica de dois bracos
+  float arms = cos(ang * 2.0 - log(r + 0.30) * 3.1);
+  arms = pow(0.5 + 0.5 * arms, 2.8);
+
+  // envelope: disco fino que engrossa no bojo
+  float thick = 6.5 + 13.0 * exp(-r * 1.1);
+  float env = exp(-r * 0.95) * exp(-abs(q.y) * thick);
+  env *= smoothstep(0.0, 0.5, r) * 0.72 + 0.28;   // clareia levemente o centro
+
+  // granulacao fina de poeira
+  float n = fbm4(qd * 2.85 + vec3(0.0, uTime * 0.02, 0.0));
+  float dust = smoothstep(0.32, 0.80, n);
+
+  float d = env * mix(0.05, 1.0, arms) * (0.34 + 1.05 * dust);
+
+  // corredor escuro de poeira acompanhando o braco
+  d *= 1.0 - 0.72 * smoothstep(0.45, 0.92, arms) * smoothstep(0.60, 0.12, n);
+
+  // bojo: nuvem esferica e quente no centro
+  float bojo = exp(-length(vec3(p.x, p.y * 1.7, p.z)) * 3.4);
+  d += bojo * 0.20 * (0.6 + 0.4 * n);
+
+  // cor por raio
+  vec3 c = mix(uCoreCol, uArmCol, smoothstep(0.12, 1.15, r));
+  c = mix(c, uRimCol, smoothstep(1.15, 3.2, r) * 0.72);
+  // bercarios estelares: pontos quentes onde braco e poeira coincidem
+  float hot = smoothstep(0.80, 1.0, arms) * smoothstep(0.70, 0.98, n);
+  c += mix(uCoreCol, vec3(1.0), 0.45) * hot * 1.9;
+  c = mix(c, mix(uCoreCol, vec3(1.0), 0.5), smoothstep(0.06, 0.75, bojo));
+  emis = c;
+  return d;
+}
+
+// nebulosa larga que preenche o volume ao redor
+float nebula(vec3 p, out vec3 emis){
+  vec3 q = p * 0.34 + vec3(0.0, uTime * 0.006, uTime * 0.004);
+  float n = fbm3(q + fbm3(q * 1.7) * 0.9);
+  float m = smoothstep(0.58, 0.92, n) * exp(-length(p) * 0.30);
+  emis = mix(uRimCol * 0.30, uArmCol * 0.42, smoothstep(0.55, 0.9, n));
+  return m * 0.055;
+}
+
+/* ---------------- fundo ---------------- */
+vec3 estrelas(vec3 rd){
+  vec3 sum = vec3(0.0);
+  for(int i = 0; i < 3; i++){
+    float fi = float(i);
+    float scale = 110.0 + fi * 190.0;
+    vec3 p = rd * scale;
+    vec3 id = floor(p);
+    vec3 gv = fract(p) - 0.5;
+    vec3 h = hash33(id + fi * 17.0);
+    if(h.x > 0.912 - fi * 0.010){
+      float d = length(gv - (h.yzx - 0.5) * 0.62);
+      float tw = 0.62 + 0.38 * sin(uTime * (1.1 + h.z * 2.6) + h.y * 40.0);
+      float b = smoothstep(0.058, 0.0, d) * (0.35 + 0.65 * h.y) * tw;
+      vec3 tint = mix(vec3(0.68, 0.80, 1.0), vec3(1.0, 0.86, 0.68), h.z);
+      sum += b * tint * (1.6 - fi * 0.34);
+    }
+  }
+  return sum;
+}
+
+vec3 fundo(vec3 rd){
+  float h = fbm3(rd * 2.1 + 4.0);
+  vec3 haze = mix(vec3(0.004, 0.005, 0.014), uRimCol * 0.030, smoothstep(0.50, 0.95, h));
+  haze += uArmCol * 0.016 * smoothstep(0.62, 1.0, fbm3(rd * 3.4 - 9.0));
+  return haze + estrelas(rd);
+}
+
+/* ---------------- mundo anelado ---------------- */
+const vec3  PC = vec3(-3.55, -1.15, 2.55);   // centro do planeta
+const float PR = 0.92;                        // raio
+
+float esfera(vec3 ro, vec3 rd, vec3 c, float r){
+  vec3 oc = ro - c;
+  float b = dot(oc, rd);
+  float k = dot(oc, oc) - r * r;
+  float h = b * b - k;
+  if(h < 0.0) return -1.0;
+  float t = -b - sqrt(h);
+  return t > 0.0 ? t : -1.0;
+}
+
+vec3 planeta(vec3 pos, vec3 rd){
+  vec3 n = normalize(pos - PC);
+  vec3 l = normalize(-pos);                        // luz vem do nucleo galactico
+  float dif = max(dot(n, l), 0.0);
+  dif = smoothstep(0.0, 0.42, dif) * dif;          // terminador suave
+
+  // faixas atmosfericas
+  float band = fbm4(vec3(n.x * 2.2, n.y * 7.0, n.z * 2.2) + 3.0);
+  vec3 base = mix(vec3(0.05, 0.09, 0.14), vec3(0.16, 0.24, 0.30), band);
+  base = mix(base, uArmCol * 0.35, smoothstep(0.55, 0.95, band) * 0.6);
+
+  vec3 col = base * (dif * 1.5 + 0.015);
+  // luz cinzenta: o disco inteiro ilumina fracamente o lado noturno
+  col += uArmCol * 0.035 * pow(1.0 - dif, 2.0);
+  // atmosfera na borda
+  float fres = pow(1.0 - max(dot(n, -rd), 0.0), 3.2);
+  col += mix(uArmCol, vec3(1.0), 0.25) * fres * (0.09 + 0.85 * dif);
+  return col;
+}
+
+vec4 anel(vec3 ro, vec3 rd, out float tOut){
+  tOut = 1e9;
+  vec3 nrm = normalize(vec3(0.28, 1.0, -0.16));
+  float dn = dot(rd, nrm);
+  if(abs(dn) < 1e-4) return vec4(0.0);
+  float t = dot(PC - ro, nrm) / dn;
+  if(t <= 0.0) return vec4(0.0);
+  vec3 h = ro + rd * t;
+  float r = length(h - PC);
+  if(r < PR * 1.42 || r > PR * 2.35) return vec4(0.0);
+
+  float u = (r - PR * 1.42) / (PR * 0.93);
+  float bands = fbm3(vec3(r * 26.0, 0.0, 0.0)) * 0.75 + 0.4 * fbm3(vec3(r * 61.0, 5.0, 0.0));
+  float a = smoothstep(0.0, 0.14, u) * smoothstep(1.0, 0.80, u) * bands;
+  a *= 0.62 * clamp(abs(dn) * 2.4 + 0.18, 0.0, 1.0);   // mais tenue de perfil
+
+  vec3 lit = normalize(-h);
+  float back = 0.45 + 0.55 * max(dot(-rd, lit), 0.0);  // brilha ao ser vista contra a luz
+  vec3 col = mix(vec3(0.72, 0.70, 0.66), uCoreCol, 0.45) * back;
+  tOut = t;
+  return vec4(col, clamp(a, 0.0, 1.0));
+}
+
+/* ---------------- brilho analitico do nucleo ---------------- */
+vec3 nucleo(vec3 ro, vec3 rd){
+  float t = max(dot(-ro, rd), 0.0);
+  vec3 p = ro + rd * t;
+  // aberracao cromatica leve: cada canal enxerga um halo de tamanho distinto
+  vec3 g;
+  for(int i = 0; i < 3; i++){
+    float k = 1.0 + float(i) * 0.085;
+    vec3 q = p * k;
+    float d = length(q);
+    g[i] = 0.024 / (d * d + 0.0060);
+  }
+  return g * mix(uCoreCol, vec3(1.0), 0.35);
+}
+
+/* ---------------- extras ---------------- */
+// meteoro ocasional atravessando o quadro
+vec3 meteoro(vec2 uv){
+  float id = floor(uTime / 9.0);
+  float lt = fract(uTime / 9.0);
+  vec3 h = hash33(vec3(id, 7.3, 1.9));
+  if(h.x < 0.45) return vec3(0.0);
+  vec2 dir = normalize(vec2(-0.94, -0.34 - h.y * 0.34));
+  vec2 a = vec2(1.35, 0.55 + h.z * 0.5) - dir * 0.2;
+  vec2 pos = a + dir * (lt * 3.1);
+  vec2 d = uv - pos;
+  float along = dot(d, dir);
+  float perp = length(d - dir * along);
+  float trail = smoothstep(0.30, 0.0, -along) * step(along, 0.0);
+  float core = smoothstep(0.010, 0.0, perp);
+  float life = smoothstep(0.0, 0.08, lt) * smoothstep(1.0, 0.75, lt);
+  return vec3(0.85, 0.93, 1.0) * core * trail * life * 1.4;
+}
+
+// poeira proxima, desfocada, deslizando devagar
+vec3 poeira(vec2 uv, float yaw){
+  vec3 s = vec3(0.0);
+  for(int i = 0; i < 2; i++){
+    float fi = float(i);
+    float sc = 5.0 + fi * 5.5;
+    vec2 p = uv * sc + vec2(-yaw * (2.2 - fi), uTime * (0.018 + fi * 0.012));
+    vec2 id = floor(p);
+    vec2 gv = fract(p) - 0.5;
+    vec3 h = hash33(vec3(id, fi * 3.7));
+    if(h.x > 0.93){
+      float d = length(gv - (h.yz - 0.5) * 0.7);
+      float b = smoothstep(0.05 + h.z * 0.035, 0.0, d);
+      s += b * mix(uArmCol, uCoreCol, h.z) * (0.018 + 0.030 * h.y);
+    }
+  }
+  return s;
+}
+
+/* ---------------- tonemap ---------------- */
+vec3 aces(vec3 x){
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+
+  // camera em orbita
+  float yaw = uOrbit.x, pitch = uOrbit.y;
+  vec3 ro = vec3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * uDist;
+  vec3 fw = normalize(-ro);
+  vec3 rt = normalize(cross(vec3(0.0, 1.0, 0.0), fw));
+  vec3 up = cross(fw, rt);
+  vec3 rd = normalize(uv.x * rt + uv.y * up + 1.42 * fw);
+
+  // fundo + objetos solidos
+  vec3 bg = fundo(rd);
+  float tEnd = 60.0;
+
+  float tRing; vec4 ring = anel(ro, rd, tRing);
+  float tPl = esfera(ro, rd, PC, PR);
+
+  // halo atmosferico ao redor do planeta (fora do disco)
+  float tc = max(dot(PC - ro, rd), 0.0);
+  float dcp = length(ro + rd * tc - PC);
+  if(tPl < 0.0 && tc > 0.0){
+    bg += mix(uArmCol, vec3(0.6, 0.85, 1.0), 0.5) * exp(-(dcp - PR) * 11.0) * 0.30;
+  }
+
+  if(tPl > 0.0){
+    bg = planeta(ro + rd * tPl, rd);
+    tEnd = tPl;
+  }
+  if(ring.a > 0.001 && tRing < tEnd){
+    bg = mix(bg, ring.rgb, ring.a);
+    tEnd = min(tEnd, tRing);
+  }
+
+  // marcha volumetrica dentro de uma esfera de raio 7
+  vec3 acc = vec3(0.0);
+  float trans = 1.0;
+  float b = dot(ro, rd);
+  float c = dot(ro, ro) - 49.0;
+  float h = b * b - c;
+  if(h > 0.0){
+    h = sqrt(h);
+    float t0 = max(-b - h, 0.0);
+    float t1 = min(min(-b + h, tEnd), 60.0);
+    if(t1 > t0){
+      float dt = (t1 - t0) / float(STEPS);
+      float jit = hash13(vec3(gl_FragCoord.xy, uTime * 60.0));
+      float t = t0 + dt * jit;
+      for(int i = 0; i < STEPS; i++){
+        if(trans < 0.012 || t > t1) break;
+        vec3 p = ro + rd * t;
+        vec3 ec; float d = disco(p, ec);
+        vec3 nc; float nd = nebula(p, nc);
+        vec3 e = (ec * d * 2.9 + nc * nd * 1.1);
+        float dens = d * 1.55 + nd * 0.5;
+        acc += trans * e * dt;
+        trans *= exp(-dens * dt * 1.55);
+        t += dt;
+      }
+    }
+  }
+
+  vec3 col = acc + trans * bg;
+  col += nucleo(ro, rd) * trans;
+
+  // estria anamorfica da lente: o nucleo sempre cai no centro do quadro
+  float sd = length(vec2(uv.x * 0.22, uv.y * 3.4));
+  col += mix(uCoreCol, vec3(1.0), 0.45) * (0.0016 / (sd * sd + 0.0022)) * trans * 0.16;
+  col += poeira(uv, yaw);
+  col += meteoro(uv);
+
+  // acabamento
+  col *= 1.0 - 0.42 * pow(length(uv * vec2(0.82, 1.0)), 2.3);   // vinheta
+  // auto-exposicao: fecha o diafragma quando a camera mergulha no nucleo
+  col = aces(col * mix(0.45, 1.06, smoothstep(2.4, 7.5, uDist)));
+  col = pow(col, vec3(0.4545));
+  col += (hash13(vec3(gl_FragCoord.xy, floor(uTime * 24.0))) - 0.5) * 0.022;  // grao
+  fragColor = vec4(col, 1.0);
+}`;
+
+/* ============================ runtime ============================ */
+const cv = document.getElementById('gl');
+const gl = cv.getContext('webgl2', { antialias:false, alpha:false, powerPreference:'high-performance' });
+
+if(!gl){
+  document.body.innerHTML =
+    '<div style="display:grid;place-items:center;height:100%;font:300 15px/1.7 system-ui;color:#eef1ff;text-align:center;padding:8vw">' +
+    'Este navegador não expõe WebGL2.<br><span style="opacity:.5">A simulação precisa dele para desenhar o volume.</span></div>';
+  throw new Error('sem webgl2');
+}
+
+function compile(type, src){
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+gl.linkProgram(prog);
+if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+const U = n => gl.getUniformLocation(prog, n);
+const uRes = U('uRes'), uTime = U('uTime'), uOrbit = U('uOrbit'), uDist = U('uDist'),
+      uCore = U('uCoreCol'), uArm = U('uArmCol'), uRim = U('uRimCol');
+
+/* ---- paletas ---- */
+const PALETAS = [
+  { core:[1.00,0.84,0.55], arm:[0.34,0.72,1.00], rim:[0.86,0.30,0.78] }, // Áurion
+  { core:[1.00,0.86,0.55], arm:[1.00,0.35,0.12], rim:[0.55,0.06,0.42] }, // Cinzas de Vela
+  { core:[0.90,0.99,1.00], arm:[0.36,0.86,0.96], rim:[0.44,0.52,1.00] }  // Maré Fria
+];
+let alvoPal = PALETAS[0];
+const pal = { core:[...alvoPal.core], arm:[...alvoPal.arm], rim:[...alvoPal.rim] };
+
+document.querySelectorAll('.sw').forEach(b => {
+  b.addEventListener('click', () => {
+    alvoPal = PALETAS[+b.dataset.p];
+    document.querySelectorAll('.sw').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+  });
+});
+
+/* ---- câmera ---- */
+const cam = { yaw:0.6, pitch:0.60, dist:7.2, yawT:0.6, pitchT:0.60, distT:7.2 };
+let arrastando = false, lastX = 0, lastY = 0, ocioso = 0;
+
+function pointerDown(x, y){ arrastando = true; lastX = x; lastY = y; ocioso = 0; document.body.classList.add('dragging'); }
+function pointerMove(x, y){
+  if(!arrastando) return;
+  cam.yawT   -= (x - lastX) * 0.0052;
+  cam.pitchT += (y - lastY) * 0.0038;
+  cam.pitchT = Math.max(-1.15, Math.min(1.28, cam.pitchT));
+  lastX = x; lastY = y; ocioso = 0;
+}
+function pointerUp(){ arrastando = false; document.body.classList.remove('dragging'); }
+
+addEventListener('pointerdown', e => pointerDown(e.clientX, e.clientY));
+addEventListener('pointermove', e => pointerMove(e.clientX, e.clientY));
+addEventListener('pointerup', pointerUp);
+addEventListener('pointercancel', pointerUp);
+addEventListener('wheel', e => {
+  e.preventDefault();
+  cam.distT = Math.max(2.4, Math.min(15.0, cam.distT + e.deltaY * 0.0032));
+  ocioso = 0;
+}, { passive:false });
+
+// pinça em telas de toque
+let pinca = 0;
+addEventListener('touchmove', e => {
+  if(e.touches.length === 2){
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                         e.touches[0].clientY - e.touches[1].clientY);
+    if(pinca) cam.distT = Math.max(2.4, Math.min(15.0, cam.distT + (pinca - d) * 0.012));
+    pinca = d; arrastando = false;
+  }
+}, { passive:true });
+addEventListener('touchend', () => { pinca = 0; });
+
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(k === 'h') document.body.classList.toggle('clean');
+  if(k === 'f'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  if(k >= '1' && k <= '3') document.querySelector(`.sw[data-p="${+k - 1}"]`)?.click();
+});
+
+/* ---- resolução adaptativa ---- */
+let escala = 1.0, mediaMs = 16, W = 0, H = 0;
+function redimensionar(){
+  const dpr = Math.min(devicePixelRatio || 1, 2) * escala;
+  const w = Math.max(1, Math.round(innerWidth * dpr));
+  const h = Math.max(1, Math.round(innerHeight * dpr));
+  if(w === W && h === H) return;
+  W = cv.width = w; H = cv.height = h;
+  gl.viewport(0, 0, W, H);
+}
+addEventListener('resize', () => { W = 0; redimensionar(); });
+redimensionar();
+
+/* ---- laço ---- */
+const t0 = performance.now();
+let anterior = t0;
+const lerp = (a, b, k) => a + (b - a) * k;
+
+function quadro(now){
+  const dt = Math.min((now - anterior) / 1000, 0.05);
+  anterior = now;
+
+  // ajusta a resolução se o quadro ficar caro
+  mediaMs = lerp(mediaMs, dt * 1000, 0.05);
+  if(mediaMs > 26 && escala > 0.62){ escala = Math.max(0.62, escala - 0.06); W = 0; redimensionar(); }
+  else if(mediaMs < 13 && escala < 1.0){ escala = Math.min(1.0, escala + 0.02); W = 0; redimensionar(); }
+
+  // deriva automática quando ninguém toca em nada
+  ocioso += dt;
+  if(ocioso > 3.0 && !arrastando){
+    cam.yawT += dt * 0.026;
+    cam.pitchT = lerp(cam.pitchT, 0.52 + Math.sin(now * 0.00007) * 0.22, dt * 0.3);
+  }
+
+  cam.yaw   = lerp(cam.yaw,   cam.yawT,   1 - Math.pow(0.0016, dt));
+  cam.pitch = lerp(cam.pitch, cam.pitchT, 1 - Math.pow(0.0016, dt));
+  cam.dist  = lerp(cam.dist,  cam.distT,  1 - Math.pow(0.004,  dt));
+
+  for(const k of ['core','arm','rim'])
+    for(let i = 0; i < 3; i++)
+      pal[k][i] = lerp(pal[k][i], alvoPal[k][i], 1 - Math.pow(0.02, dt));
+
+  gl.uniform2f(uRes, W, H);
+  gl.uniform1f(uTime, (now - t0) / 1000);
+  gl.uniform2f(uOrbit, cam.yaw, cam.pitch);
+  gl.uniform1f(uDist, cam.dist);
+  gl.uniform3fv(uCore, pal.core);
+  gl.uniform3fv(uArm, pal.arm);
+  gl.uniform3fv(uRim, pal.rim);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  requestAnimationFrame(quadro);
+}
+requestAnimationFrame(quadro);
+</script>
+</body>
+</html>
