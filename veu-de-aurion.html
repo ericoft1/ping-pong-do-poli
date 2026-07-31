@@ -5,34 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Véu de Áurion — Simulação Intergaláctica</title>
 <style>
-  :root{
-    --ink: #eef1ff;
-    --dim: rgba(238,241,255,.52);
-    --hair: rgba(238,241,255,.16);
-  }
+  :root{ --ink:#eef1ff; --dim:rgba(238,241,255,.52); --hair:rgba(238,241,255,.16); }
   *{ box-sizing:border-box; }
-  html,body{ height:100%; margin:0; background:#03030a; overflow:hidden; }
+  html,body{ height:100%; margin:0; background:#020207; overflow:hidden; }
   body{
     font-family: ui-sans-serif, -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
-    color:var(--ink);
-    -webkit-font-smoothing:antialiased;
-    touch-action:none;
-    cursor:grab;
+    color:var(--ink); -webkit-font-smoothing:antialiased; touch-action:none; cursor:grab;
   }
   body.dragging{ cursor:grabbing; }
   canvas{ position:fixed; inset:0; width:100%; height:100%; display:block; }
 
-  /* ---- véu de entrada ---- */
   #curtain{
-    position:fixed; inset:0; background:#03030a; z-index:9;
-    pointer-events:none; animation: fadeout 2.6s .35s ease-out forwards;
+    position:fixed; inset:0; background:#020207; z-index:9; pointer-events:none;
+    display:grid; place-items:center; transition:opacity 1.8s ease-out;
   }
-  @keyframes fadeout{ to{ opacity:0; } }
+  #curtain.gone{ opacity:0; }
+  #curtain p{
+    margin:0; font-size:10px; letter-spacing:.42em; text-transform:uppercase;
+    color:rgba(238,241,255,.35); animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{ 50%{ opacity:.35; } }
 
-  /* ---- interface ---- */
-  .ui{ position:fixed; z-index:10; pointer-events:none; opacity:0; animation: rise 1.6s 1.5s cubic-bezier(.16,1,.3,1) forwards; }
-  @keyframes rise{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
-  body.clean .ui{ opacity:0; transition:opacity .5s ease; }
+  .ui{ position:fixed; z-index:10; pointer-events:none; opacity:0; transition:opacity .6s ease; }
+  body.ready .ui{ opacity:1; }
+  body.ready.clean .ui{ opacity:0; }
 
   #head{ top:clamp(20px,4vh,44px); left:clamp(20px,4vw,52px); max-width:min(78vw,520px); }
   .kicker{
@@ -45,16 +41,12 @@
     font-size:clamp(38px,7.2vw,86px); line-height:.94;
     background:linear-gradient(96deg,#fff 8%,#ffd9a8 34%,#8fd6ff 66%,#e6a8ff 96%);
     -webkit-background-clip:text; background-clip:text; color:transparent;
-    text-shadow:0 0 60px rgba(150,190,255,.18);
   }
   .sub{
     margin:16px 0 0; font-size:clamp(11px,1.5vw,15px); font-weight:300;
     letter-spacing:.24em; color:rgba(238,241,255,.6);
   }
-  #head p:not(.kicker):not(.sub){
-    margin:18px 0 0; max-width:38ch; font-size:13px; line-height:1.7;
-    color:var(--dim); font-weight:300;
-  }
+  #head p.body{ margin:18px 0 0; max-width:38ch; font-size:13px; line-height:1.7; color:var(--dim); font-weight:300; }
   .rule{ width:64px; height:1px; background:linear-gradient(90deg,rgba(255,214,150,.7),transparent); margin:22px 0 0; }
 
   #hud{
@@ -62,49 +54,42 @@
     font-size:11px; letter-spacing:.06em; color:var(--dim); line-height:2.1;
   }
   #hud kbd{
-    font:inherit; font-size:10px; letter-spacing:.1em;
-    border:1px solid var(--hair); border-radius:5px; padding:2px 7px; margin-left:8px;
-    color:var(--ink); background:rgba(255,255,255,.035);
+    font:inherit; font-size:10px; letter-spacing:.1em; border:1px solid var(--hair);
+    border-radius:5px; padding:2px 7px; margin-left:8px; color:var(--ink); background:rgba(255,255,255,.035);
   }
   #stamp{
     left:clamp(20px,4vw,52px); bottom:clamp(20px,4vh,40px);
     font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:rgba(238,241,255,.3);
   }
   #stamp span{ color:rgba(143,214,255,.6); }
+  #stamp i{ font-style:normal; opacity:.55; }
 
-  /* seletor de paleta */
-  #palettes{
-    right:clamp(20px,4vw,52px); top:clamp(20px,4vh,44px);
-    display:flex; gap:10px; pointer-events:auto;
-  }
+  #palettes{ right:clamp(20px,4vw,52px); top:clamp(20px,4vh,44px); display:flex; gap:10px; pointer-events:auto; }
   .sw{
-    width:26px; height:26px; border-radius:50%; border:1px solid var(--hair);
-    padding:0; cursor:pointer; position:relative; background-clip:padding-box;
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--hair); padding:0;
+    cursor:pointer; background-clip:padding-box;
     transition:transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
   }
   .sw:hover{ transform:scale(1.14); }
   .sw[aria-pressed="true"]{ box-shadow:0 0 0 1px rgba(238,241,255,.55), 0 0 22px rgba(255,255,255,.22); }
-  @media (max-width:720px){
-    #hud{ display:none; }
-    #head p:not(.kicker):not(.sub){ display:none; }
-  }
+  @media (max-width:720px){ #hud{ display:none; } #head p.body{ display:none; } }
 </style>
 </head>
 <body>
 <canvas id="gl"></canvas>
-<div id="curtain"></div>
+<div id="curtain"><p>acendendo o volume</p></div>
 
 <header class="ui" id="head">
   <p class="kicker"><b>Setor 9</b> &nbsp;·&nbsp; travessia lenta</p>
   <h1>Véu de Áurion</h1>
   <p class="sub">simulação intergaláctica</p>
-  <p>Um disco espiral de poeira e gás renderizado por marcha volumétrica em tempo real — mais retrato do que medida. Nada aqui é fisicamente correto; tudo aqui é intencional.</p>
+  <p class="body">Gás volumétrico, sessenta mil estrelas resolvidas e um mundo anelado sob a luz do núcleo. Nada aqui é fisicamente correto; tudo aqui é intencional.</p>
   <div class="rule"></div>
 </header>
 
 <div class="ui" id="palettes" role="group" aria-label="Paletas">
   <button class="sw" data-p="0" aria-pressed="true"  title="Áurion" style="background:conic-gradient(#ffd9a8,#8fd6ff,#e6a8ff,#ffd9a8)"></button>
-  <button class="sw" data-p="1" aria-pressed="false" title="Cinzas de Vela" style="background:conic-gradient(#fff0d0,#ff9d6b,#ff5f9e,#fff0d0)"></button>
+  <button class="sw" data-p="1" aria-pressed="false" title="Cinzas de Vela" style="background:conic-gradient(#ffdc9b,#ff7a2f,#8c1060,#ffdc9b)"></button>
   <button class="sw" data-p="2" aria-pressed="false" title="Maré Fria" style="background:conic-gradient(#eafcff,#6ee7f9,#7b8dff,#eafcff)"></button>
 </div>
 
@@ -114,356 +99,27 @@
   esconder interface<kbd>H</kbd><br>
   tela cheia<kbd>F</kbd>
 </div>
-<div class="ui" id="stamp">obs. <span>áurion</span> — 1&thinsp;284 anos-luz</div>
+<div class="ui" id="stamp">obs. <span>áurion</span> — 1&thinsp;284 anos-luz &nbsp;<i id="perf"></i></div>
 
 <script>
-/* ============================================================
+/* ==========================================================================
    VÉU DE ÁURION
-   Galáxia volumétrica, nebulosa e mundo anelado em um único
-   fragment shader. Sem dependências, sem texturas, sem rede.
-   ============================================================ */
 
-const VERT = `#version 300 es
-void main(){
-  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
-  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
-}`;
+   Pipeline em cinco etapas, para o custo cair onde ninguém percebe e a
+   nitidez sobrar onde o olho procura:
 
-const FRAG = `#version 300 es
-precision highp float;
-out vec4 fragColor;
+     1. gás volumétrico  — meia resolução, marcha apenas na fatia do disco
+     2. estrelas         — 60k pontos em resolução plena, uma chamada de desenho
+     3. cena             — fundo, nebulosa, planeta e anéis; compõe o volume
+     4. bloom            — extração + borrão separável em 1/4 de resolução
+     5. final            — aberração cromática, ACES, vinheta, grão
 
-uniform vec2  uRes;
-uniform float uTime;
-uniform vec2  uOrbit;     // yaw, pitch
-uniform float uDist;      // distancia da camera
-uniform vec3  uCoreCol;   // paleta: nucleo
-uniform vec3  uArmCol;    // paleta: bracos
-uniform vec3  uRimCol;    // paleta: periferia
+   O ruído vive numa textura 3D gerada uma vez: quatro oitavas por fetch,
+   no lugar de dezenas de hashes por passo de marcha.
+   ========================================================================== */
 
-#define STEPS 78
-#define PI 3.14159265359
-
-/* ---------------- ruido ---------------- */
-float hash13(vec3 p3){
-  p3 = fract(p3 * 0.1031);
-  p3 += dot(p3, p3.zyx + 31.32);
-  return fract((p3.x + p3.y) * p3.z);
-}
-vec3 hash33(vec3 p3){
-  p3 = fract(p3 * vec3(0.1031, 0.1030, 0.0973));
-  p3 += dot(p3, p3.yxz + 33.33);
-  return fract((p3.xxy + p3.yxx) * p3.zyx);
-}
-float vnoise(vec3 x){
-  vec3 i = floor(x), f = fract(x);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(mix(hash13(i), hash13(i + vec3(1,0,0)), f.x),
-                 mix(hash13(i + vec3(0,1,0)), hash13(i + vec3(1,1,0)), f.x), f.y),
-             mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x),
-                 mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y), f.z);
-}
-const mat3 ROT = mat3( 0.00, 0.80, 0.60,
-                      -0.80, 0.36,-0.48,
-                      -0.60,-0.48, 0.64);
-float fbm4(vec3 p){
-  float a = 0.5, s = 0.0;
-  for(int i = 0; i < 4; i++){ s += a * vnoise(p); p = ROT * p * 2.03; a *= 0.5; }
-  return s;
-}
-float fbm3(vec3 p){
-  float a = 0.5, s = 0.0;
-  for(int i = 0; i < 3; i++){ s += a * vnoise(p); p = ROT * p * 2.07; a *= 0.5; }
-  return s;
-}
-
-/* ---------------- o disco ---------------- */
-// rotacao rigida em torno de y. O padrao espiral gira inteiro, como uma
-// onda de densidade: nada de cisalhamento acumulando com o tempo.
-vec3 giro(vec3 p, float a){
-  float c = cos(a), s = sin(a);
-  return vec3(c * p.x - s * p.z, p.y, s * p.x + c * p.z);
-}
-
-float disco(vec3 p, out vec3 emis){
-  float r = length(p.xz);
-  vec3 q = giro(p, uTime * 0.055);                             // padrao dos bracos
-  // a poeira vive num espaco ja torcido em espiral: os filamentos nascem
-  // alinhados aos bracos e a torcao nao cresce com o tempo
-  vec3 qd = giro(p, uTime * 0.088 - 1.7 * log(r + 0.30));
-
-  // dobra o espaco antes de medir os bracos: turbulencia grande
-  vec3 w = q + (fbm3(q * 0.55 + vec3(0.0, uTime * 0.012, 0.0)) - 0.5) * 0.55;
-  float ang = atan(w.z, w.x);
-
-  // espiral logaritmica de dois bracos
-  float arms = cos(ang * 2.0 - log(r + 0.30) * 3.1);
-  arms = pow(0.5 + 0.5 * arms, 2.8);
-
-  // envelope: disco fino que engrossa no bojo
-  float thick = 6.5 + 13.0 * exp(-r * 1.1);
-  float env = exp(-r * 0.95) * exp(-abs(q.y) * thick);
-  env *= smoothstep(0.0, 0.5, r) * 0.72 + 0.28;   // clareia levemente o centro
-
-  // granulacao fina de poeira
-  float n = fbm4(qd * 2.85 + vec3(0.0, uTime * 0.02, 0.0));
-  float dust = smoothstep(0.32, 0.80, n);
-
-  float d = env * mix(0.05, 1.0, arms) * (0.34 + 1.05 * dust);
-
-  // corredor escuro de poeira acompanhando o braco
-  d *= 1.0 - 0.72 * smoothstep(0.45, 0.92, arms) * smoothstep(0.60, 0.12, n);
-
-  // bojo: nuvem esferica e quente no centro
-  float bojo = exp(-length(vec3(p.x, p.y * 1.7, p.z)) * 3.4);
-  d += bojo * 0.20 * (0.6 + 0.4 * n);
-
-  // cor por raio
-  vec3 c = mix(uCoreCol, uArmCol, smoothstep(0.12, 1.15, r));
-  c = mix(c, uRimCol, smoothstep(1.15, 3.2, r) * 0.72);
-  // bercarios estelares: pontos quentes onde braco e poeira coincidem
-  float hot = smoothstep(0.80, 1.0, arms) * smoothstep(0.70, 0.98, n);
-  c += mix(uCoreCol, vec3(1.0), 0.45) * hot * 1.9;
-  c = mix(c, mix(uCoreCol, vec3(1.0), 0.5), smoothstep(0.06, 0.75, bojo));
-  emis = c;
-  return d;
-}
-
-// nebulosa larga que preenche o volume ao redor
-float nebula(vec3 p, out vec3 emis){
-  vec3 q = p * 0.34 + vec3(0.0, uTime * 0.006, uTime * 0.004);
-  float n = fbm3(q + fbm3(q * 1.7) * 0.9);
-  float m = smoothstep(0.58, 0.92, n) * exp(-length(p) * 0.30);
-  emis = mix(uRimCol * 0.30, uArmCol * 0.42, smoothstep(0.55, 0.9, n));
-  return m * 0.055;
-}
-
-/* ---------------- fundo ---------------- */
-vec3 estrelas(vec3 rd){
-  vec3 sum = vec3(0.0);
-  for(int i = 0; i < 3; i++){
-    float fi = float(i);
-    float scale = 110.0 + fi * 190.0;
-    vec3 p = rd * scale;
-    vec3 id = floor(p);
-    vec3 gv = fract(p) - 0.5;
-    vec3 h = hash33(id + fi * 17.0);
-    if(h.x > 0.912 - fi * 0.010){
-      float d = length(gv - (h.yzx - 0.5) * 0.62);
-      float tw = 0.62 + 0.38 * sin(uTime * (1.1 + h.z * 2.6) + h.y * 40.0);
-      float b = smoothstep(0.058, 0.0, d) * (0.35 + 0.65 * h.y) * tw;
-      vec3 tint = mix(vec3(0.68, 0.80, 1.0), vec3(1.0, 0.86, 0.68), h.z);
-      sum += b * tint * (1.6 - fi * 0.34);
-    }
-  }
-  return sum;
-}
-
-vec3 fundo(vec3 rd){
-  float h = fbm3(rd * 2.1 + 4.0);
-  vec3 haze = mix(vec3(0.004, 0.005, 0.014), uRimCol * 0.030, smoothstep(0.50, 0.95, h));
-  haze += uArmCol * 0.016 * smoothstep(0.62, 1.0, fbm3(rd * 3.4 - 9.0));
-  return haze + estrelas(rd);
-}
-
-/* ---------------- mundo anelado ---------------- */
-const vec3  PC = vec3(-3.55, -1.15, 2.55);   // centro do planeta
-const float PR = 0.92;                        // raio
-
-float esfera(vec3 ro, vec3 rd, vec3 c, float r){
-  vec3 oc = ro - c;
-  float b = dot(oc, rd);
-  float k = dot(oc, oc) - r * r;
-  float h = b * b - k;
-  if(h < 0.0) return -1.0;
-  float t = -b - sqrt(h);
-  return t > 0.0 ? t : -1.0;
-}
-
-vec3 planeta(vec3 pos, vec3 rd){
-  vec3 n = normalize(pos - PC);
-  vec3 l = normalize(-pos);                        // luz vem do nucleo galactico
-  float dif = max(dot(n, l), 0.0);
-  dif = smoothstep(0.0, 0.42, dif) * dif;          // terminador suave
-
-  // faixas atmosfericas
-  float band = fbm4(vec3(n.x * 2.2, n.y * 7.0, n.z * 2.2) + 3.0);
-  vec3 base = mix(vec3(0.05, 0.09, 0.14), vec3(0.16, 0.24, 0.30), band);
-  base = mix(base, uArmCol * 0.35, smoothstep(0.55, 0.95, band) * 0.6);
-
-  vec3 col = base * (dif * 1.5 + 0.015);
-  // luz cinzenta: o disco inteiro ilumina fracamente o lado noturno
-  col += uArmCol * 0.035 * pow(1.0 - dif, 2.0);
-  // atmosfera na borda
-  float fres = pow(1.0 - max(dot(n, -rd), 0.0), 3.2);
-  col += mix(uArmCol, vec3(1.0), 0.25) * fres * (0.09 + 0.85 * dif);
-  return col;
-}
-
-vec4 anel(vec3 ro, vec3 rd, out float tOut){
-  tOut = 1e9;
-  vec3 nrm = normalize(vec3(0.28, 1.0, -0.16));
-  float dn = dot(rd, nrm);
-  if(abs(dn) < 1e-4) return vec4(0.0);
-  float t = dot(PC - ro, nrm) / dn;
-  if(t <= 0.0) return vec4(0.0);
-  vec3 h = ro + rd * t;
-  float r = length(h - PC);
-  if(r < PR * 1.42 || r > PR * 2.35) return vec4(0.0);
-
-  float u = (r - PR * 1.42) / (PR * 0.93);
-  float bands = fbm3(vec3(r * 26.0, 0.0, 0.0)) * 0.75 + 0.4 * fbm3(vec3(r * 61.0, 5.0, 0.0));
-  float a = smoothstep(0.0, 0.14, u) * smoothstep(1.0, 0.80, u) * bands;
-  a *= 0.62 * clamp(abs(dn) * 2.4 + 0.18, 0.0, 1.0);   // mais tenue de perfil
-
-  vec3 lit = normalize(-h);
-  float back = 0.45 + 0.55 * max(dot(-rd, lit), 0.0);  // brilha ao ser vista contra a luz
-  vec3 col = mix(vec3(0.72, 0.70, 0.66), uCoreCol, 0.45) * back;
-  tOut = t;
-  return vec4(col, clamp(a, 0.0, 1.0));
-}
-
-/* ---------------- brilho analitico do nucleo ---------------- */
-vec3 nucleo(vec3 ro, vec3 rd){
-  float t = max(dot(-ro, rd), 0.0);
-  vec3 p = ro + rd * t;
-  // aberracao cromatica leve: cada canal enxerga um halo de tamanho distinto
-  vec3 g;
-  for(int i = 0; i < 3; i++){
-    float k = 1.0 + float(i) * 0.085;
-    vec3 q = p * k;
-    float d = length(q);
-    g[i] = 0.024 / (d * d + 0.0060);
-  }
-  return g * mix(uCoreCol, vec3(1.0), 0.35);
-}
-
-/* ---------------- extras ---------------- */
-// meteoro ocasional atravessando o quadro
-vec3 meteoro(vec2 uv){
-  float id = floor(uTime / 9.0);
-  float lt = fract(uTime / 9.0);
-  vec3 h = hash33(vec3(id, 7.3, 1.9));
-  if(h.x < 0.45) return vec3(0.0);
-  vec2 dir = normalize(vec2(-0.94, -0.34 - h.y * 0.34));
-  vec2 a = vec2(1.35, 0.55 + h.z * 0.5) - dir * 0.2;
-  vec2 pos = a + dir * (lt * 3.1);
-  vec2 d = uv - pos;
-  float along = dot(d, dir);
-  float perp = length(d - dir * along);
-  float trail = smoothstep(0.30, 0.0, -along) * step(along, 0.0);
-  float core = smoothstep(0.010, 0.0, perp);
-  float life = smoothstep(0.0, 0.08, lt) * smoothstep(1.0, 0.75, lt);
-  return vec3(0.85, 0.93, 1.0) * core * trail * life * 1.4;
-}
-
-// poeira proxima, desfocada, deslizando devagar
-vec3 poeira(vec2 uv, float yaw){
-  vec3 s = vec3(0.0);
-  for(int i = 0; i < 2; i++){
-    float fi = float(i);
-    float sc = 5.0 + fi * 5.5;
-    vec2 p = uv * sc + vec2(-yaw * (2.2 - fi), uTime * (0.018 + fi * 0.012));
-    vec2 id = floor(p);
-    vec2 gv = fract(p) - 0.5;
-    vec3 h = hash33(vec3(id, fi * 3.7));
-    if(h.x > 0.93){
-      float d = length(gv - (h.yz - 0.5) * 0.7);
-      float b = smoothstep(0.05 + h.z * 0.035, 0.0, d);
-      s += b * mix(uArmCol, uCoreCol, h.z) * (0.018 + 0.030 * h.y);
-    }
-  }
-  return s;
-}
-
-/* ---------------- tonemap ---------------- */
-vec3 aces(vec3 x){
-  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
-}
-
-void main(){
-  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
-
-  // camera em orbita
-  float yaw = uOrbit.x, pitch = uOrbit.y;
-  vec3 ro = vec3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * uDist;
-  vec3 fw = normalize(-ro);
-  vec3 rt = normalize(cross(vec3(0.0, 1.0, 0.0), fw));
-  vec3 up = cross(fw, rt);
-  vec3 rd = normalize(uv.x * rt + uv.y * up + 1.42 * fw);
-
-  // fundo + objetos solidos
-  vec3 bg = fundo(rd);
-  float tEnd = 60.0;
-
-  float tRing; vec4 ring = anel(ro, rd, tRing);
-  float tPl = esfera(ro, rd, PC, PR);
-
-  // halo atmosferico ao redor do planeta (fora do disco)
-  float tc = max(dot(PC - ro, rd), 0.0);
-  float dcp = length(ro + rd * tc - PC);
-  if(tPl < 0.0 && tc > 0.0){
-    bg += mix(uArmCol, vec3(0.6, 0.85, 1.0), 0.5) * exp(-(dcp - PR) * 11.0) * 0.30;
-  }
-
-  if(tPl > 0.0){
-    bg = planeta(ro + rd * tPl, rd);
-    tEnd = tPl;
-  }
-  if(ring.a > 0.001 && tRing < tEnd){
-    bg = mix(bg, ring.rgb, ring.a);
-    tEnd = min(tEnd, tRing);
-  }
-
-  // marcha volumetrica dentro de uma esfera de raio 7
-  vec3 acc = vec3(0.0);
-  float trans = 1.0;
-  float b = dot(ro, rd);
-  float c = dot(ro, ro) - 49.0;
-  float h = b * b - c;
-  if(h > 0.0){
-    h = sqrt(h);
-    float t0 = max(-b - h, 0.0);
-    float t1 = min(min(-b + h, tEnd), 60.0);
-    if(t1 > t0){
-      float dt = (t1 - t0) / float(STEPS);
-      float jit = hash13(vec3(gl_FragCoord.xy, uTime * 60.0));
-      float t = t0 + dt * jit;
-      for(int i = 0; i < STEPS; i++){
-        if(trans < 0.012 || t > t1) break;
-        vec3 p = ro + rd * t;
-        vec3 ec; float d = disco(p, ec);
-        vec3 nc; float nd = nebula(p, nc);
-        vec3 e = (ec * d * 2.9 + nc * nd * 1.1);
-        float dens = d * 1.55 + nd * 0.5;
-        acc += trans * e * dt;
-        trans *= exp(-dens * dt * 1.55);
-        t += dt;
-      }
-    }
-  }
-
-  vec3 col = acc + trans * bg;
-  col += nucleo(ro, rd) * trans;
-
-  // estria anamorfica da lente: o nucleo sempre cai no centro do quadro
-  float sd = length(vec2(uv.x * 0.22, uv.y * 3.4));
-  col += mix(uCoreCol, vec3(1.0), 0.45) * (0.0016 / (sd * sd + 0.0022)) * trans * 0.16;
-  col += poeira(uv, yaw);
-  col += meteoro(uv);
-
-  // acabamento
-  col *= 1.0 - 0.42 * pow(length(uv * vec2(0.82, 1.0)), 2.3);   // vinheta
-  // auto-exposicao: fecha o diafragma quando a camera mergulha no nucleo
-  col = aces(col * mix(0.45, 1.06, smoothstep(2.4, 7.5, uDist)));
-  col = pow(col, vec3(0.4545));
-  col += (hash13(vec3(gl_FragCoord.xy, floor(uTime * 24.0))) - 0.5) * 0.022;  // grao
-  fragColor = vec4(col, 1.0);
-}`;
-
-/* ============================ runtime ============================ */
 const cv = document.getElementById('gl');
-const gl = cv.getContext('webgl2', { antialias:false, alpha:false, powerPreference:'high-performance' });
+const gl = cv.getContext('webgl2', { antialias:false, alpha:false, depth:false, powerPreference:'high-performance' });
 
 if(!gl){
   document.body.innerHTML =
@@ -472,32 +128,652 @@ if(!gl){
   throw new Error('sem webgl2');
 }
 
+const FLOAT_FBO = !!(gl.getExtension('EXT_color_buffer_half_float') || gl.getExtension('EXT_color_buffer_float'));
+const HDR = FLOAT_FBO ? gl.RGBA16F : gl.RGBA8;
+const MAX_PS = Math.min(gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1] || 32, 48);
+
+/* ======================= trechos de shader compartilhados ================= */
+
+const QUAD_VS = `#version 300 es
+out vec2 vUv;
+void main(){
+  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+  vUv = p;
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+
+// camera + ruido, usados pelo volume e pela cena
+const COMMON = `
+precision highp float;
+precision highp sampler3D;
+
+uniform vec2  uRes;
+uniform float uTime;
+uniform vec3  uRo, uRt, uUp, uFw;
+uniform vec3  uCoreCol, uArmCol, uRimCol;
+uniform sampler3D uNoise;
+
+#define PI 3.14159265359
+
+vec3 rayDir(vec2 uv){ return normalize(uv.x * uRt + uv.y * uUp + 1.42 * uFw); }
+
+// quatro oitavas empacotadas nos canais da textura: uma unica busca
+float fbm(vec3 p){
+  vec4 n = texture(uNoise, p);
+  return n.r * 0.52 + n.g * 0.27 + n.b * 0.14 + n.a * 0.07;
+}
+
+// rotacao rigida em torno de y: o padrao espiral gira inteiro, como uma onda
+// de densidade, sem cisalhamento acumulando com o tempo
+vec3 giro(vec3 p, float a){
+  float c = cos(a), s = sin(a);
+  return vec3(c * p.x - s * p.z, p.y, s * p.x + c * p.z);
+}
+
+/* --------- o mundo anelado: geometria compartilhada entre os passos ------- */
+const vec3  PC = vec3(-3.60, -1.05, 2.45);
+const float PR = 0.92;
+const vec3  RN = vec3(0.26308, 0.94028, -0.21503);  // normal do anel, normalizada
+const float R0 = PR * 1.45, R1 = PR * 2.32;
+
+float esfera(vec3 ro, vec3 rd, vec3 c, float r){
+  vec3 oc = ro - c;
+  float b = dot(oc, rd), k = dot(oc, oc) - r * r, h = b * b - k;
+  if(h < 0.0) return -1.0;
+  float t = -b - sqrt(h);
+  return t > 0.0 ? t : -1.0;
+}
+// densidade do anel a um raio dado (0 fora da faixa)
+float anelDens(float r){
+  if(r < R0 || r > R1) return 0.0;
+  float u = (r - R0) / (R1 - R0);
+  float b = fbm(vec3(r * 2.1, 0.31, 0.62)) * 1.25 + 0.55 * fbm(vec3(r * 8.5, 0.77, 0.14));
+  float gap = smoothstep(0.012, 0.075, abs(u - 0.42));   // divisao larga
+  return smoothstep(0.0, 0.10, u) * smoothstep(1.0, 0.84, u) * b * gap;
+}
+float anelT(vec3 ro, vec3 rd){
+  float dn = dot(rd, RN);
+  if(abs(dn) < 1e-4) return -1.0;
+  float t = dot(PC - ro, RN) / dn;
+  return t > 0.0 ? t : -1.0;
+}
+`;
+
+/* =============================== 1. o gás ================================= */
+
+const VOL_FS = `#version 300 es
+${COMMON}
+in vec2 vUv;
+out vec4 outColor;
+
+// densidade do disco no ponto p; devolve a cor de emissao em emis
+float disco(vec3 p, out vec3 emis){
+  float r = length(p.xz);
+  if(r > 4.6){ emis = vec3(0.0); return 0.0; }
+
+  vec3 q = giro(p, uTime * 0.055);
+  float ang = atan(q.z, q.x);
+
+  // dobra suave do espaco: tira a regularidade matematica dos bracos
+  ang += (fbm(q * 0.07 + 0.31) - 0.5) * 1.15;
+
+  float fase = ang * 2.0 - log(r + 0.30) * 3.15;
+  float braco = pow(0.5 + 0.5 * cos(fase), 2.6);
+  float terceiro = pow(0.5 + 0.5 * cos(ang * 3.0 - log(r + 0.30) * 4.1), 3.0);
+  braco = max(braco, terceiro * 0.42);                 // assimetria
+
+  // envelope: disco fino que engrossa no bojo
+  float thick = 6.5 + 13.0 * exp(-r * 1.1);
+  float env = exp(-r * 0.95) * exp(-abs(p.y) * thick);
+  env *= smoothstep(0.0, 0.5, r) * 0.72 + 0.28;
+
+  // poeira num espaco ja torcido em espiral: os filamentos nascem alinhados
+  // aos bracos e a torcao nao cresce com o tempo
+  vec3 qd = giro(p, uTime * 0.088 - 1.7 * log(r + 0.30));
+  float n = fbm(qd * 0.062 + vec3(0.0, uTime * 0.004, 0.0));
+  float fino = fbm(qd * 0.24 + 0.7);
+  n = n * 0.72 + fino * 0.28;
+  float grao = smoothstep(0.30, 0.78, n);
+
+  float d = env * mix(0.05, 1.0, braco) * (0.32 + 1.08 * grao);
+
+  // a faixa escura de poeira caminha na borda interna do braco
+  float faixa = pow(0.5 + 0.5 * cos(fase + 0.62), 3.0);
+  d *= 1.0 - 0.78 * faixa * smoothstep(0.62, 0.14, fino);
+
+  // bojo: nuvem esferica e quente no centro
+  float bojo = exp(-length(vec3(p.x, p.y * 1.7, p.z)) * 3.4);
+  d += bojo * 0.20 * (0.6 + 0.4 * n);
+
+  vec3 c = mix(uCoreCol, uArmCol, smoothstep(0.12, 1.15, r));
+  c = mix(c, uRimCol, smoothstep(1.15, 3.2, r) * 0.62);
+
+  // regioes HII: nos rosados onde braco e poeira densa coincidem
+  float hii = smoothstep(0.80, 1.0, braco) * smoothstep(0.74, 0.96, fino);
+  c += mix(vec3(1.0, 0.30, 0.52), vec3(1.0), 0.25) * hii * 2.1;
+  c = mix(c, mix(uCoreCol, vec3(1.0), 0.5), smoothstep(0.06, 0.75, bojo));
+
+  emis = c;
+  return d;
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  vec3 ro = uRo, rd = rayDir(uv);
+
+  // ---- limites da marcha: esfera de contencao ...
+  float b = dot(ro, rd), c0 = dot(ro, ro) - 25.0, h = b * b - c0;
+  if(h <= 0.0){ outColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+  h = sqrt(h);
+  float t0 = max(-b - h, 0.0), t1 = -b + h;
+
+  // ... e a fatia do disco. Fora dela o gas e' desprezivel, e marchar o vazio
+  // era metade do custo antigo.
+  const float SLAB = 1.15;
+  if(abs(rd.y) > 1e-4){
+    float ta = (SLAB - ro.y) / rd.y, tb = (-SLAB - ro.y) / rd.y;
+    t0 = max(t0, min(ta, tb));
+    t1 = min(t1, max(ta, tb));
+  } else if(abs(ro.y) > SLAB){
+    outColor = vec4(0.0, 0.0, 0.0, 1.0); return;
+  }
+
+  // o planeta e o anel interrompem a marcha
+  float tp = esfera(ro, rd, PC, PR);
+  if(tp > 0.0) t1 = min(t1, tp);
+  float tr = anelT(ro, rd);
+  if(tr > 0.0 && anelDens(length(ro + rd * tr - PC)) > 0.35) t1 = min(t1, tr);
+
+  if(t1 <= t0){ outColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+
+  vec3 acc = vec3(0.0);
+  float trans = 1.0;
+  const int STEPS = 40;
+  float dt = (t1 - t0) / float(STEPS);
+  float jit = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453 + uTime);
+  float t = t0 + dt * jit;
+
+  for(int i = 0; i < STEPS; i++){
+    if(trans < 0.015) break;
+    vec3 emis; float d = disco(ro + rd * t, emis);
+    if(d > 0.002){
+      acc += trans * emis * d * 6.0 * dt;
+      trans *= exp(-d * 2.10 * dt);
+    }
+    t += dt;
+  }
+  outColor = vec4(acc, trans);
+}`;
+
+/* ============================= 2. as estrelas ============================= */
+
+const STAR_VS = `#version 300 es
+precision highp float;
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aCol;
+layout(location = 2) in vec3 aMeta;   // tamanho, 1 = gira com a galaxia, fase
+uniform mat4 uVP;
+uniform float uTime, uPix, uMaxPS;
+out vec3 vCol;
+out float vInt;
+
+void main(){
+  vec3 p = aPos;
+  float gira = aMeta.y;
+  if(gira > 0.5){
+    float a = -uTime * 0.055;                 // acompanha o padrao do gas
+    float c = cos(a), s = sin(a);
+    p = vec3(c * p.x - s * p.z, p.y, s * p.x + c * p.z);
+  }
+  gl_Position = uVP * vec4(p, 1.0);
+
+  // uma estrela e uma fonte pontual: o diametro na tela e' quase fixo, quem
+  // responde a distancia e' o brilho. Escalar o raio pela distancia deixava
+  // tudo abaixo de um pixel -- e invisivel.
+  gl_PointSize = clamp(aMeta.x * uPix, 1.1, uMaxPS);
+
+  float w = max(gl_Position.w, 0.4);
+  float perto = gira > 0.5 ? clamp(52.0 / (w * w), 0.15, 1.8) : 1.0;
+  float tw = gira > 0.5 ? 1.0 : 0.72 + 0.28 * sin(uTime * 1.6 + aMeta.z * 6.283);
+
+  vInt = perto * tw * pow(uPix, -0.6);
+  vCol = aCol;
+}`;
+
+const STAR_FS = `#version 300 es
+precision highp float;
+in vec3 vCol;
+in float vInt;
+out vec4 outColor;
+void main(){
+  vec2 g = gl_PointCoord - 0.5;
+  float d = dot(g, g) * 4.0;
+  if(d > 1.0) discard;
+  float a = exp(-d * 3.4) - 0.033;
+  outColor = vec4(vCol * vInt * a * 0.52, 1.0);
+}`;
+
+/* ======================= 3. cena: fundo, mundo, volume ==================== */
+
+const SCENE_FS = `#version 300 es
+${COMMON}
+in vec2 vUv;
+out vec4 outColor;
+uniform sampler2D uVol;
+
+// nebulosa distante: uma camada analitica na direcao do raio. Marchar isso
+// custava caro e nao mudava nada -- ela nao tem paralaxe util.
+vec3 ceu(vec3 rd){
+  vec3 d = rd * 0.5 + vec3(0.0, uTime * 0.0016, 0.0);
+  float n = fbm(d + vec3(fbm(d * 2.1) - 0.5) * 0.6);
+  float m = smoothstep(0.44, 0.86, n);
+  vec3 col = mix(vec3(0.004, 0.005, 0.016), uRimCol * 0.055, m);
+  col += uArmCol * 0.032 * smoothstep(0.56, 0.95, fbm(d * 1.7 + 3.3));
+  // uma segunda galaxia, minuscula, para dar profundidade ao fundo
+  vec3 g = normalize(vec3(-0.62, 0.46, -0.64));
+  float dd = length(rd - g);
+  float el = exp(-dd * dd * 3200.0) + 0.35 * exp(-dd * dd * 600.0);
+  col += vec3(0.85, 0.86, 1.0) * el * 0.55;
+  return col;
+}
+
+vec3 planeta(vec3 pos, vec3 rd){
+  vec3 n = normalize(pos - PC);
+  vec3 l = normalize(-pos);                       // a luz vem do nucleo
+  float dif = max(dot(n, l), 0.0);
+  dif = smoothstep(0.0, 0.42, dif) * dif;
+
+  // sombra do anel projetada no planeta
+  float dn = dot(l, RN);
+  if(abs(dn) > 1e-4){
+    float ts = dot(PC - pos, RN) / dn;
+    if(ts > 0.0) dif *= 1.0 - 0.72 * clamp(anelDens(length(pos + l * ts - PC)), 0.0, 1.0);
+  }
+
+  float band = fbm(vec3(n.x * 0.5, n.y * 1.6, n.z * 0.5) + 3.0);
+  float turb = fbm(vec3(n.x * 1.7, n.y * 0.9, n.z * 1.7) + 8.0);
+  band = band * 0.7 + turb * 0.3;
+  vec3 base = mix(vec3(0.05, 0.09, 0.14), vec3(0.17, 0.26, 0.32), band);
+  base = mix(base, uArmCol * 0.34, smoothstep(0.52, 0.95, band) * 0.65);
+
+  vec3 col = base * (dif * 1.55 + 0.012);
+  col += uArmCol * 0.030 * pow(1.0 - dif, 2.0);   // luz cinzenta do disco
+  float fres = pow(1.0 - max(dot(n, -rd), 0.0), 3.2);
+  col += mix(uArmCol, vec3(1.0), 0.25) * fres * (0.09 + 0.85 * dif);
+  return col;
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  vec3 ro = uRo, rd = rayDir(uv);
+
+  vec3 col = ceu(rd);
+  float alpha = 1.0;                              // quanto do fundo sobrevive
+
+  // halo atmosferico ao redor do planeta
+  float tc = max(dot(PC - ro, rd), 0.0);
+  float dcp = length(ro + rd * tc - PC);
+  float tp = esfera(ro, rd, PC, PR);
+  if(tp < 0.0 && tc > 0.0)
+    col += mix(uArmCol, vec3(0.6, 0.85, 1.0), 0.5) * exp(-(dcp - PR) * 11.0) * 0.34;
+
+  float tr = anelT(ro, rd);
+  float rd_ = tr > 0.0 ? anelDens(length(ro + rd * tr - PC)) : 0.0;
+
+  // o planeta e opaco: apaga o fundo
+  if(tp > 0.0 && (rd_ < 0.02 || tr > tp)){
+    col = planeta(ro + rd * tp, rd);
+    alpha = 0.0;
+  }
+  // o anel, quando esta na frente
+  if(rd_ > 0.02 && (tp < 0.0 || tr < tp)){
+    vec3 h = ro + rd * tr;
+    vec3 l = normalize(-h);
+    float back = 0.42 + 0.58 * max(dot(-rd, l), 0.0);   // brilha contra a luz
+    if(esfera(h, l, PC, PR) > 0.0) back *= 0.16;        // sombra do planeta
+    float a = clamp(rd_ * 0.72 * clamp(abs(dot(rd, RN)) * 2.4 + 0.16, 0.0, 1.0), 0.0, 1.0);
+    vec3 rc = mix(vec3(0.74, 0.71, 0.66), uCoreCol, 0.42) * back;
+    col = mix(col, rc, a);
+    alpha *= 1.0 - a;
+  }
+
+  // ---- o volume, em meia resolucao, composto por cima
+  vec4 v = texture(uVol, vUv);
+  col = col * v.a + v.rgb;
+  // as estrelas ficam no buffer de destino: pow suaviza o fato de todas
+  // serem tratadas como se estivessem atras de todo o gas
+  alpha *= pow(v.a, 0.7);
+
+  // brilho analitico do nucleo, com aberracao cromatica no halo
+  float tn = max(dot(-ro, rd), 0.0);
+  vec3 pn = ro + rd * tn;
+  vec3 g;
+  for(int i = 0; i < 3; i++){
+    float d = length(pn * (1.0 + float(i) * 0.085));
+    g[i] = 0.024 / (d * d + 0.0060);
+  }
+  col += g * mix(uCoreCol, vec3(1.0), 0.35) * v.a;
+
+  // estria anamorfica: o nucleo sempre cai no centro do quadro
+  float sd = length(vec2(uv.x * 0.22, uv.y * 3.4));
+  col += mix(uCoreCol, vec3(1.0), 0.45) * (0.0016 / (sd * sd + 0.0022)) * v.a * 0.16;
+
+  // meteoro ocasional
+  float id = floor(uTime / 11.0), lt = fract(uTime / 11.0);
+  vec3 hh = fract(vec3(id, id * 1.7, id * 2.3) * vec3(0.1031, 0.1030, 0.0973) * 37.0);
+  if(hh.x > 0.42){
+    vec2 dir = normalize(vec2(-0.94, -0.34 - hh.y * 0.34));
+    vec2 pos = vec2(1.35, 0.55 + hh.z * 0.5) - dir * 0.2 + dir * (lt * 3.1);
+    vec2 dv = uv - pos;
+    float al = dot(dv, dir);
+    float pe = length(dv - dir * al);
+    float vida = smoothstep(0.0, 0.08, lt) * smoothstep(1.0, 0.75, lt);
+    col += vec3(0.85, 0.93, 1.0) * smoothstep(0.008, 0.0, pe)
+         * smoothstep(0.32, 0.0, -al) * step(al, 0.0) * vida * 1.5;
+  }
+
+  outColor = vec4(col, alpha);
+}`;
+
+/* ================================ 4. bloom =============================== */
+
+const BRIGHT_FS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 outColor;
+uniform sampler2D uTex;
+uniform vec2 uTexel;
+void main(){
+  // media de quatro amostras: reduz e filtra numa passada so
+  vec3 c = texture(uTex, vUv + uTexel * vec2(-1.0, -1.0)).rgb
+         + texture(uTex, vUv + uTexel * vec2( 1.0, -1.0)).rgb
+         + texture(uTex, vUv + uTexel * vec2(-1.0,  1.0)).rgb
+         + texture(uTex, vUv + uTexel * vec2( 1.0,  1.0)).rgb;
+  c *= 0.25;
+  float b = max(max(c.r, c.g), c.b);
+  float k = max(b - 0.78, 0.0) / max(b, 1e-4);     // joelho suave
+  outColor = vec4(c * k * k, 1.0);
+}`;
+
+const BLUR_FS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 outColor;
+uniform sampler2D uTex;
+uniform vec2 uDir;
+void main(){
+  // nove toques em cinco buscas, aproveitando o filtro linear
+  vec3 c = texture(uTex, vUv).rgb * 0.227027;
+  c += (texture(uTex, vUv + uDir * 1.3846).rgb + texture(uTex, vUv - uDir * 1.3846).rgb) * 0.316216;
+  c += (texture(uTex, vUv + uDir * 3.2308).rgb + texture(uTex, vUv - uDir * 3.2308).rgb) * 0.070270;
+  outColor = vec4(c, 1.0);
+}`;
+
+/* ================================ 5. final =============================== */
+
+const FINAL_FS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 outColor;
+uniform sampler2D uScene, uBloom;
+uniform vec2 uRes;
+uniform float uTime, uExpo;
+
+vec3 aces(vec3 x){
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+}
+
+void main(){
+  vec2 uv = vUv;
+  vec2 d = uv - 0.5;
+  float r2 = dot(d, d);
+
+  // aberracao cromatica: cresce para as bordas, como uma lente de verdade.
+  // Fica discreta de proposito -- com estrelas de um pixel, exagerar aqui
+  // transforma o campo inteiro em confete.
+  vec2 off = d * r2 * 0.0045;
+  vec3 col = vec3(
+    texture(uScene, uv + off).r,
+    texture(uScene, uv).g,
+    texture(uScene, uv - off).b
+  );
+
+  col += texture(uBloom, uv).rgb * 0.60;
+  col *= 1.0 - 0.45 * pow(r2 * 3.1, 1.15);                       // vinheta
+  col = aces(col * uExpo);
+  col = pow(col, vec3(0.4545));
+
+  float g = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233)) + uTime) * 43758.5453);
+  col += (g - 0.5) * 0.020;                                      // grao + dither
+  outColor = vec4(col, 1.0);
+}`;
+
+/* =============================== plataforma ============================== */
+
 function compile(type, src){
   const s = gl.createShader(type);
-  gl.shaderSource(s, src);
-  gl.compileShader(s);
-  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+    throw new Error(gl.getShaderInfoLog(s) + '\n' +
+      src.split('\n').map((l, i) => (i + 1) + ': ' + l).join('\n'));
+  }
   return s;
 }
-const prog = gl.createProgram();
-gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
-gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
-gl.linkProgram(prog);
-if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
-gl.useProgram(prog);
-const U = n => gl.getUniformLocation(prog, n);
-const uRes = U('uRes'), uTime = U('uTime'), uOrbit = U('uOrbit'), uDist = U('uDist'),
-      uCore = U('uCoreCol'), uArm = U('uArmCol'), uRim = U('uRimCol');
+function programa(vs, fs){
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {};
+  const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for(let i = 0; i < n; i++){
+    const info = gl.getActiveUniform(p, i);
+    u[info.name.replace('[0]', '')] = gl.getUniformLocation(p, info.name);
+  }
+  return { p, u };
+}
+function alvo(w, h, fmt = HDR){
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, fmt, w, h);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fb = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  return { tex, fb, w, h };
+}
 
-/* ---- paletas ---- */
+/* --------- ruído em textura 3D: quatro reticulados, um por canal --------- */
+function ruido3D(N = 64){
+  const dados = new Uint8Array(N * N * N * 4);
+  const lados = [2, 4, 8, 16];
+  const grades = lados.map(L => {
+    const g = new Float32Array(L * L * L);
+    for(let i = 0; i < g.length; i++) g[i] = Math.random();
+    return { L, g };
+  });
+  const suave = t => t * t * (3 - 2 * t);
+  for(let c = 0; c < 4; c++){
+    const { L, g } = grades[c];
+    for(let z = 0; z < N; z++){
+      const fz = z / N * L, iz = Math.floor(fz), wz = suave(fz - iz);
+      const z0 = (iz % L) * L * L, z1 = ((iz + 1) % L) * L * L;
+      for(let y = 0; y < N; y++){
+        const fy = y / N * L, iy = Math.floor(fy), wy = suave(fy - iy);
+        const y0 = (iy % L) * L, y1 = ((iy + 1) % L) * L;
+        for(let x = 0; x < N; x++){
+          const fx = x / N * L, ix = Math.floor(fx), wx = suave(fx - ix);
+          const x0 = ix % L, x1 = (ix + 1) % L;
+          const c000 = g[z0 + y0 + x0], c100 = g[z0 + y0 + x1];
+          const c010 = g[z0 + y1 + x0], c110 = g[z0 + y1 + x1];
+          const c001 = g[z1 + y0 + x0], c101 = g[z1 + y0 + x1];
+          const c011 = g[z1 + y1 + x0], c111 = g[z1 + y1 + x1];
+          const a = c000 + (c100 - c000) * wx, b = c010 + (c110 - c010) * wx;
+          const e = c001 + (c101 - c001) * wx, f = c011 + (c111 - c011) * wx;
+          const ab = a + (b - a) * wy, ef = e + (f - e) * wy;
+          dados[((z * N + y) * N + x) * 4 + c] = (ab + (ef - ab) * wz) * 255;
+        }
+      }
+    }
+  }
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_3D, tex);
+  gl.texImage3D(gl.TEXTURE_3D, 0, gl.RGBA8, N, N, N, 0, gl.RGBA, gl.UNSIGNED_BYTE, dados);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.REPEAT);
+  return tex;
+}
+
+/* ------------------------ populacao estelar ------------------------------ */
+// gaussiana barata
+let guarda = null;
+function gauss(){
+  if(guarda !== null){ const v = guarda; guarda = null; return v; }
+  let u = 0, v = 0, s = 0;
+  do { u = Math.random() * 2 - 1; v = Math.random() * 2 - 1; s = u * u + v * v; }
+  while(s === 0 || s >= 1);
+  const m = Math.sqrt(-2 * Math.log(s) / s);
+  guarda = v * m; return u * m;
+}
+
+function estrelas(){
+  const DISCO = 42000, BOJO = 9000, CEU = 2400;
+  const total = DISCO + BOJO + CEU;
+  const buf = new Float32Array(total * 9);
+  let o = 0;
+  const por = (x, y, z, r, g, b, s, gira, fase) => {
+    buf[o++] = x; buf[o++] = y; buf[o++] = z;
+    buf[o++] = r; buf[o++] = g; buf[o++] = b;
+    buf[o++] = s; buf[o++] = gira; buf[o++] = fase;
+  };
+
+  // disco: as estrelas nascem sobre a mesma espiral logaritmica do gas
+  for(let i = 0; i < DISCO; i++){
+    // disco exponencial: a densidade cai com o raio, como num disco de verdade
+    let r = 0.30 - Math.log(1 - Math.random()) * 1.05;
+    if(r > 4.2){ r = 0.30 + Math.random() * 3.9; }
+    const fase = 0.5 * (3.15 * Math.log(r + 0.30));
+    const braco = Math.random() < 0.5 ? 0 : Math.PI;
+    // quanto mais longe, mais frouxo o braco
+    const espalha = 0.10 + 0.17 * (r / 3.9) + 0.06 / (r + 0.2);
+    let th = fase + braco + gauss() * espalha;
+    if(Math.random() < 0.15) th = Math.random() * Math.PI * 2;   // populacao de fundo
+    const alt = (0.055 + 0.030 * r) * gauss();
+    const x = Math.cos(th) * r, z = Math.sin(th) * r;
+
+    const q = Math.random();
+    let cr, cg, cb, s;
+    if(q < 0.055){                       // supergigantes azuis nos bracos
+      cr = 0.62; cg = 0.78; cb = 1.0; s = 2.1 + Math.random() * 2.4;
+    } else if(q < 0.070){                // nos HII, rosados
+      cr = 1.0; cg = 0.55; cb = 0.70; s = 1.5 + Math.random() * 1.4;
+    } else if(q < 0.30){                 // gigantes amarelas
+      cr = 1.0; cg = 0.88; cb = 0.66; s = 1.0 + Math.random() * 1.1;
+    } else {                             // populacao comum
+      cr = 0.82; cg = 0.86; cb = 1.0; s = 0.55 + Math.random() * 0.85;
+    }
+    const brilho = (0.22 + 0.78 * Math.pow(Math.random(), 2.6)) * (1.0 - 0.45 * (r / 4.2));
+    por(x, alt, z, cr * brilho, cg * brilho, cb * brilho, s, 1, 0);
+  }
+
+  // bojo: esferoide velho e amarelado
+  for(let i = 0; i < BOJO; i++){
+    const r = Math.pow(Math.random(), 2.1) * 0.95;
+    const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
+    const x = r * Math.sin(ph) * Math.cos(th);
+    const y = r * Math.cos(ph) * 0.62;
+    const z = r * Math.sin(ph) * Math.sin(th);
+    const b = (0.35 + 0.65 * Math.pow(Math.random(), 1.8)) * 0.9;
+    por(x, y, z, 1.0 * b, 0.86 * b, 0.62 * b, 0.5 + Math.random() * 0.9, 1, 0);
+  }
+
+  // ceu: o campo distante, fixo
+  for(let i = 0; i < CEU; i++){
+    const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
+    const R = 90;
+    const x = R * Math.sin(ph) * Math.cos(th);
+    const y = R * Math.cos(ph);
+    const z = R * Math.sin(ph) * Math.sin(th);
+    const t = Math.random();
+    const cr = 0.66 + 0.34 * t, cg = 0.78 + 0.14 * t, cb = 1.0 - 0.30 * t * t;
+    const b = 0.07 + 0.93 * Math.pow(Math.random(), 4.2);
+    por(x, y, z, cr * b, cg * b, cb * b, 0.7 + b * 2.2, 0, Math.random());
+  }
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  const vbo = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, buf, gl.STATIC_DRAW);
+  const S = 9 * 4;
+  for(let i = 0; i < 3; i++){
+    gl.enableVertexAttribArray(i);
+    gl.vertexAttribPointer(i, 3, gl.FLOAT, false, S, i * 12);
+  }
+  gl.bindVertexArray(null);
+  return { vao, n: total };
+}
+
+/* --------------------------------- matrizes ------------------------------ */
+function vistaProjecao(ro, rt, up, fw, aspect){
+  const f = 1.0 / Math.tan(Math.atan(0.5 / 1.42));   // mesma abertura dos raios
+  const near = 0.05, far = 400;
+  // projecao * vista, montada direto em ordem de coluna
+  const p = [f / aspect, 0, 0, 0,  0, f, 0, 0,  0, 0, (far + near) / (near - far), -1,
+             0, 0, 2 * far * near / (near - far), 0];
+  const v = [
+    rt[0], up[0], -fw[0], 0,
+    rt[1], up[1], -fw[1], 0,
+    rt[2], up[2], -fw[2], 0,
+    -(rt[0] * ro[0] + rt[1] * ro[1] + rt[2] * ro[2]),
+    -(up[0] * ro[0] + up[1] * ro[1] + up[2] * ro[2]),
+      fw[0] * ro[0] + fw[1] * ro[1] + fw[2] * ro[2],
+    1
+  ];
+  const o = new Float32Array(16);
+  for(let c = 0; c < 4; c++) for(let r = 0; r < 4; r++){
+    let s = 0;
+    for(let k = 0; k < 4; k++) s += p[k * 4 + r] * v[c * 4 + k];
+    o[c * 4 + r] = s;
+  }
+  return o;
+}
+
+/* ================================ montagem =============================== */
+
+const progVol    = programa(QUAD_VS, VOL_FS);
+const progStar   = programa(STAR_VS, STAR_FS);
+const progScene  = programa(QUAD_VS, SCENE_FS);
+const progBright = programa(QUAD_VS, BRIGHT_FS);
+const progBlur   = programa(QUAD_VS, BLUR_FS);
+const progFinal  = programa(QUAD_VS, FINAL_FS);
+
+const texNoise = ruido3D(64);
+const campo = estrelas();
+const vaoVazio = gl.createVertexArray();
+
+let fbScene = null, fbVol = null, fbA = null, fbB = null;
+function alvos(w, h){
+  for(const f of [fbScene, fbVol, fbA, fbB]) if(f){ gl.deleteTexture(f.tex); gl.deleteFramebuffer(f.fb); }
+  const hv = Math.max(1, Math.round(w * 0.5)), vv = Math.max(1, Math.round(h * 0.5));
+  const bw = Math.max(1, Math.round(w * 0.25)), bh = Math.max(1, Math.round(h * 0.25));
+  fbScene = alvo(w, h); fbVol = alvo(hv, vv); fbA = alvo(bw, bh); fbB = alvo(bw, bh);
+}
+
 const PALETAS = [
-  { core:[1.00,0.84,0.55], arm:[0.34,0.72,1.00], rim:[0.86,0.30,0.78] }, // Áurion
-  { core:[1.00,0.86,0.55], arm:[1.00,0.35,0.12], rim:[0.55,0.06,0.42] }, // Cinzas de Vela
-  { core:[0.90,0.99,1.00], arm:[0.36,0.86,0.96], rim:[0.44,0.52,1.00] }  // Maré Fria
+  { core:[1.00,0.84,0.55], arm:[0.34,0.72,1.00], rim:[0.86,0.30,0.78] },
+  { core:[1.00,0.86,0.55], arm:[1.00,0.35,0.12], rim:[0.55,0.06,0.42] },
+  { core:[0.90,0.99,1.00], arm:[0.36,0.86,0.96], rim:[0.44,0.52,1.00] }
 ];
 let alvoPal = PALETAS[0];
 const pal = { core:[...alvoPal.core], arm:[...alvoPal.arm], rim:[...alvoPal.rim] };
-
 document.querySelectorAll('.sw').forEach(b => {
   b.addEventListener('click', () => {
     alvoPal = PALETAS[+b.dataset.p];
@@ -505,100 +781,181 @@ document.querySelectorAll('.sw').forEach(b => {
   });
 });
 
-/* ---- câmera ---- */
-const cam = { yaw:0.6, pitch:0.60, dist:7.2, yawT:0.6, pitchT:0.60, distT:7.2 };
+/* --------------------------------- camera -------------------------------- */
+const cam = { yaw:0.6, pitch:0.52, dist:7.4, yawT:0.6, pitchT:0.52, distT:7.4 };
 let arrastando = false, lastX = 0, lastY = 0, ocioso = 0;
+const base = { ro:[0,0,0], rt:[0,0,0], up:[0,0,0], fw:[0,0,0] };
 
-function pointerDown(x, y){ arrastando = true; lastX = x; lastY = y; ocioso = 0; document.body.classList.add('dragging'); }
-function pointerMove(x, y){
+function baseCam(){
+  const cy = Math.cos(cam.pitch);
+  const ro = [Math.sin(cam.yaw) * cy * cam.dist, Math.sin(cam.pitch) * cam.dist, Math.cos(cam.yaw) * cy * cam.dist];
+  const L = Math.hypot(ro[0], ro[1], ro[2]);
+  const fw = [-ro[0] / L, -ro[1] / L, -ro[2] / L];
+  // rt = normalize(cross(mundoCima, fw)); up = cross(fw, rt)
+  let rt = [1 * fw[2] - 0 * fw[1], 0 * fw[0] - 0 * fw[2], 0 * fw[1] - 1 * fw[0]];
+  const rl = Math.hypot(rt[0], rt[1], rt[2]) || 1;
+  rt = [rt[0] / rl, rt[1] / rl, rt[2] / rl];
+  const up = [fw[1] * rt[2] - fw[2] * rt[1], fw[2] * rt[0] - fw[0] * rt[2], fw[0] * rt[1] - fw[1] * rt[0]];
+  base.ro = ro; base.rt = rt; base.up = up; base.fw = fw;
+}
+
+function pDown(x, y){ arrastando = true; lastX = x; lastY = y; ocioso = 0; document.body.classList.add('dragging'); }
+function pMove(x, y){
   if(!arrastando) return;
-  cam.yawT   -= (x - lastX) * 0.0052;
-  cam.pitchT += (y - lastY) * 0.0038;
-  cam.pitchT = Math.max(-1.15, Math.min(1.28, cam.pitchT));
+  cam.yawT -= (x - lastX) * 0.0052;
+  cam.pitchT = Math.max(-1.15, Math.min(1.30, cam.pitchT + (y - lastY) * 0.0038));
   lastX = x; lastY = y; ocioso = 0;
 }
-function pointerUp(){ arrastando = false; document.body.classList.remove('dragging'); }
-
-addEventListener('pointerdown', e => pointerDown(e.clientX, e.clientY));
-addEventListener('pointermove', e => pointerMove(e.clientX, e.clientY));
-addEventListener('pointerup', pointerUp);
-addEventListener('pointercancel', pointerUp);
+function pUp(){ arrastando = false; document.body.classList.remove('dragging'); }
+addEventListener('pointerdown', e => pDown(e.clientX, e.clientY));
+addEventListener('pointermove', e => pMove(e.clientX, e.clientY));
+addEventListener('pointerup', pUp);
+addEventListener('pointercancel', pUp);
 addEventListener('wheel', e => {
   e.preventDefault();
-  cam.distT = Math.max(2.4, Math.min(15.0, cam.distT + e.deltaY * 0.0032));
-  ocioso = 0;
+  cam.distT = Math.max(2.2, Math.min(16.0, cam.distT + e.deltaY * 0.0032)); ocioso = 0;
 }, { passive:false });
 
-// pinça em telas de toque
 let pinca = 0;
 addEventListener('touchmove', e => {
   if(e.touches.length === 2){
     const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
                          e.touches[0].clientY - e.touches[1].clientY);
-    if(pinca) cam.distT = Math.max(2.4, Math.min(15.0, cam.distT + (pinca - d) * 0.012));
-    pinca = d; arrastando = false;
+    if(pinca) cam.distT = Math.max(2.2, Math.min(16.0, cam.distT + (pinca - d) * 0.012));
+    pinca = d; arrastando = false; ocioso = 0;
   }
 }, { passive:true });
 addEventListener('touchend', () => { pinca = 0; });
-
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if(k === 'h') document.body.classList.toggle('clean');
-  if(k === 'f'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  if(k === 'f') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
   if(k >= '1' && k <= '3') document.querySelector(`.sw[data-p="${+k - 1}"]`)?.click();
 });
 
-/* ---- resolução adaptativa ---- */
+/* ---------------------------- resolucao adaptativa ----------------------- */
 let escala = 1.0, mediaMs = 16, W = 0, H = 0;
 function redimensionar(){
   const dpr = Math.min(devicePixelRatio || 1, 2) * escala;
-  const w = Math.max(1, Math.round(innerWidth * dpr));
-  const h = Math.max(1, Math.round(innerHeight * dpr));
+  const w = Math.max(1, Math.round(innerWidth * dpr)), h = Math.max(1, Math.round(innerHeight * dpr));
   if(w === W && h === H) return;
   W = cv.width = w; H = cv.height = h;
-  gl.viewport(0, 0, W, H);
+  alvos(W, H);
 }
 addEventListener('resize', () => { W = 0; redimensionar(); });
 redimensionar();
 
-/* ---- laço ---- */
+/* --------------------------------- desenho ------------------------------- */
+function passe(pr, destino, w, h){
+  gl.bindFramebuffer(gl.FRAMEBUFFER, destino);
+  gl.viewport(0, 0, w, h);
+  gl.useProgram(pr.p);
+}
+function cam3(pr){
+  gl.uniform2f(pr.u.uRes, W, H);
+  gl.uniform1f(pr.u.uTime, tempo);
+  gl.uniform3fv(pr.u.uRo, base.ro); gl.uniform3fv(pr.u.uRt, base.rt);
+  gl.uniform3fv(pr.u.uUp, base.up); gl.uniform3fv(pr.u.uFw, base.fw);
+  gl.uniform3fv(pr.u.uCoreCol, pal.core); gl.uniform3fv(pr.u.uArmCol, pal.arm);
+  gl.uniform3fv(pr.u.uRimCol, pal.rim);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_3D, texNoise);
+  gl.uniform1i(pr.u.uNoise, 1);
+}
+
 const t0 = performance.now();
-let anterior = t0;
+let tempo = 0, anterior = t0, quadros = 0;
 const lerp = (a, b, k) => a + (b - a) * k;
 
 function quadro(now){
   const dt = Math.min((now - anterior) / 1000, 0.05);
-  anterior = now;
+  anterior = now; tempo = (now - t0) / 1000;
 
-  // ajusta a resolução se o quadro ficar caro
-  mediaMs = lerp(mediaMs, dt * 1000, 0.05);
-  if(mediaMs > 26 && escala > 0.62){ escala = Math.max(0.62, escala - 0.06); W = 0; redimensionar(); }
-  else if(mediaMs < 13 && escala < 1.0){ escala = Math.min(1.0, escala + 0.02); W = 0; redimensionar(); }
+  mediaMs = lerp(mediaMs, dt * 1000, 0.06);
+  if(mediaMs > 23 && escala > 0.7){ escala = Math.max(0.7, escala - 0.05); W = 0; redimensionar(); }
+  else if(mediaMs < 14 && escala < 1.0){ escala = Math.min(1.0, escala + 0.02); W = 0; redimensionar(); }
 
-  // deriva automática quando ninguém toca em nada
   ocioso += dt;
   if(ocioso > 3.0 && !arrastando){
     cam.yawT += dt * 0.026;
-    cam.pitchT = lerp(cam.pitchT, 0.52 + Math.sin(now * 0.00007) * 0.22, dt * 0.3);
+    cam.pitchT = lerp(cam.pitchT, 0.50 + Math.sin(now * 0.00007) * 0.22, dt * 0.3);
   }
-
   cam.yaw   = lerp(cam.yaw,   cam.yawT,   1 - Math.pow(0.0016, dt));
   cam.pitch = lerp(cam.pitch, cam.pitchT, 1 - Math.pow(0.0016, dt));
   cam.dist  = lerp(cam.dist,  cam.distT,  1 - Math.pow(0.004,  dt));
-
   for(const k of ['core','arm','rim'])
-    for(let i = 0; i < 3; i++)
-      pal[k][i] = lerp(pal[k][i], alvoPal[k][i], 1 - Math.pow(0.02, dt));
+    for(let i = 0; i < 3; i++) pal[k][i] = lerp(pal[k][i], alvoPal[k][i], 1 - Math.pow(0.02, dt));
+  baseCam();
 
-  gl.uniform2f(uRes, W, H);
-  gl.uniform1f(uTime, (now - t0) / 1000);
-  gl.uniform2f(uOrbit, cam.yaw, cam.pitch);
-  gl.uniform1f(uDist, cam.dist);
-  gl.uniform3fv(uCore, pal.core);
-  gl.uniform3fv(uArm, pal.arm);
-  gl.uniform3fv(uRim, pal.rim);
+  gl.disable(gl.BLEND);
+
+  // 1. gas, em meia resolucao
+  passe(progVol, fbVol.fb, fbVol.w, fbVol.h);
+  cam3(progVol);
+  gl.uniform2f(progVol.u.uRes, fbVol.w, fbVol.h);
+  gl.bindVertexArray(vaoVazio);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
+  // 2. estrelas, em resolucao plena, no fundo da cena
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene.fb);
+  gl.viewport(0, 0, W, H);
+  gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(progStar.p);
+  gl.uniformMatrix4fv(progStar.u.uVP, false, vistaProjecao(base.ro, base.rt, base.up, base.fw, W / H));
+  gl.uniform1f(progStar.u.uTime, tempo);
+  gl.uniform1f(progStar.u.uPix, Math.max(1.0, H / 760));
+  gl.uniform1f(progStar.u.uMaxPS, MAX_PS);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  gl.bindVertexArray(campo.vao);
+  gl.drawArrays(gl.POINTS, 0, campo.n);
+
+  // 3. cena por cima: dst = src.rgb + dst * src.a
+  gl.blendFunc(gl.ONE, gl.SRC_ALPHA);
+  gl.useProgram(progScene.p);
+  cam3(progScene);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fbVol.tex);
+  gl.uniform1i(progScene.u.uVol, 0);
+  gl.bindVertexArray(vaoVazio);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.disable(gl.BLEND);
+
+  // 4. bloom: extrai e borra em 1/4
+  passe(progBright, fbA.fb, fbA.w, fbA.h);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fbScene.tex);
+  gl.uniform1i(progBright.u.uTex, 0);
+  gl.uniform2f(progBright.u.uTexel, 1 / W, 1 / H);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  for(let i = 0; i < 2; i++){
+    passe(progBlur, fbB.fb, fbB.w, fbB.h);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fbA.tex);
+    gl.uniform1i(progBlur.u.uTex, 0);
+    gl.uniform2f(progBlur.u.uDir, 1 / fbA.w, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    passe(progBlur, fbA.fb, fbA.w, fbA.h);
+    gl.bindTexture(gl.TEXTURE_2D, fbB.tex);
+    gl.uniform1i(progBlur.u.uTex, 0);
+    gl.uniform2f(progBlur.u.uDir, 0, 1 / fbA.h);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  // 5. final
+  passe(progFinal, null, W, H);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fbScene.tex);
+  gl.uniform1i(progFinal.u.uScene, 0);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fbA.tex);
+  gl.uniform1i(progFinal.u.uBloom, 2);
+  gl.uniform2f(progFinal.u.uRes, W, H);
+  gl.uniform1f(progFinal.u.uTime, tempo);
+  // auto-exposicao: fecha o diafragma quando a camera mergulha no nucleo
+  gl.uniform1f(progFinal.u.uExpo, 0.42 + 0.62 * Math.min(Math.max((cam.dist - 2.2) / 5.3, 0), 1));
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  if(++quadros === 8){ document.body.classList.add('ready'); document.getElementById('curtain').classList.add('gone'); }
+  if((quadros & 31) === 0){
+    document.getElementById('perf').textContent =
+      `${Math.round(1000 / Math.max(mediaMs, 1))} fps · ${Math.round(escala * 100)}%`;
+  }
   requestAnimationFrame(quadro);
 }
 requestAnimationFrame(quadro);
