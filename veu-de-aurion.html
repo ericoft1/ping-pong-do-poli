@@ -315,7 +315,7 @@ layout(location = 2) in vec3 aMeta;   // tamanho, 1 = gira com a galaxia, fase
 uniform mat4 uVP;
 uniform float uTime, uPix, uMaxPS;
 out vec3 vCol;
-out float vInt;
+out float vInt, vNucleo, vEspiga;
 
 void main(){
   vec3 p = aPos;
@@ -327,14 +327,22 @@ void main(){
   }
   gl_Position = uVP * vec4(p, 1.0);
 
-  // uma estrela e uma fonte pontual: o diametro na tela e' quase fixo, quem
-  // responde a distancia e' o brilho. Escalar o raio pela distancia deixava
-  // tudo abaixo de um pixel -- e invisivel.
-  gl_PointSize = clamp(aMeta.x * uPix, 1.1, uMaxPS);
-
   float w = max(gl_Position.w, 0.4);
   float perto = gira > 0.5 ? clamp(52.0 / (w * w), 0.15, 1.8) : 1.0;
   float tw = gira > 0.5 ? 1.0 : 0.72 + 0.28 * sin(uTime * 1.6 + aMeta.z * 6.283);
+
+  // uma estrela e uma fonte pontual: o diametro na tela e' quase fixo, quem
+  // responde a distancia e' o brilho. Escalar o raio pela distancia deixava
+  // tudo abaixo de um pixel -- e invisivel.
+  float px = clamp(aMeta.x * uPix, 1.1, uMaxPS);
+
+  // so as poucas mais brilhantes ganham espigoes; o sprite cresce para
+  // caber a cruz, e o nucleo encolhe na mesma medida para nao engordar
+  float lum = max(max(aCol.r, aCol.g), aCol.b) * perto * tw;
+  vEspiga = smoothstep(0.72, 1.20, lum);
+  float sprite = min(mix(px, px * 6.0, vEspiga), uMaxPS);
+  gl_PointSize = sprite;
+  vNucleo = px / sprite;
 
   vInt = perto * tw * pow(uPix, -0.6);
   vCol = aCol;
@@ -343,13 +351,23 @@ void main(){
 const STAR_FS = `#version 300 es
 precision highp float;
 in vec3 vCol;
-in float vInt;
+in float vInt, vNucleo, vEspiga;
 out vec4 outColor;
 void main(){
-  vec2 g = gl_PointCoord - 0.5;
-  float d = dot(g, g) * 4.0;
-  if(d > 1.0) discard;
-  float a = exp(-d * 3.4) - 0.033;
+  vec2 g = (gl_PointCoord - 0.5) * 2.0;      // -1 .. 1 dentro do sprite
+  float d2 = dot(g, g);
+  if(d2 > 1.0) discard;
+
+  // nucleo: o mesmo perfil de sempre, medido em unidades do sprite
+  float n2 = d2 / max(vNucleo * vNucleo, 1e-5);
+  float a = max(exp(-n2 * 3.4) - 0.033, 0.0);
+
+  // espigoes de difracao, a cruz de quatro hastes de um telescopio
+  if(vEspiga > 0.001){
+    float cruz = exp(-g.x * g.x * 420.0) + exp(-g.y * g.y * 420.0);
+    a += cruz * exp(-d2 * 2.2) * vEspiga * 0.26;
+    a += exp(-d2 * 12.0) * vEspiga * 0.05;   // halo curto em volta
+  }
   outColor = vec4(vCol * vInt * a * 0.52, 1.0);
 }`;
 
@@ -658,7 +676,7 @@ function estrelas(){
   for(let i = 0; i < DISCO; i++){
     // disco exponencial: a densidade cai com o raio, como num disco de verdade
     let r = 0.30 - Math.log(1 - Math.random()) * 1.05;
-    if(r > 4.2){ r = 0.30 + Math.random() * 3.9; }
+    if(r > 4.5){ r = 0.30 + Math.random() * 4.2; }   // alcance do gas
     const fase = 0.5 * (3.15 * Math.log(r + 0.30));
     const braco = Math.random() < 0.5 ? 0 : Math.PI;
     // quanto mais longe, mais frouxo o braco
