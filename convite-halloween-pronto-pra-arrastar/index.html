@@ -117,6 +117,19 @@ const D = {
   brim: 'M -68 30 C -40 16 40 16 68 30 C 40 44 -40 44 -68 30 Z',
   cone: 'M -30 24 L -6 -46 Q 2 -66 22 -70 Q 8 -58 8 -42 L 30 24',
   band: 'M -27 12 Q 0 18 27 12',
+  faceC: 'M -46 -16 a 14 12 0 1 0 28 0 a 14 12 0 1 0 -28 0 M 18 -16 a 14 12 0 1 0 28 0 a 14 12 0 1 0 -28 0 M -50 20 Q 0 54 50 20 M -30 27 L -24 40 L -18 32 M 18 32 L 24 40 L 30 27',
+  fullMoon: 'M -100 0 a 100 100 0 1 0 200 0 a 100 100 0 1 0 -200 0',
+  wHat: 'M -54 -76 L 34 -88 M -26 -80 L 2 -128 Q 12 -146 38 -140 Q 22 -134 18 -120 L 12 -84',
+  wFace: 'M -30 -78 Q -34 -70 -38 -66 L -52 -60 L -38 -56 Q -38 -48 -30 -44',
+  wHairA: 'M 8 -82 Q 34 -76 44 -58 M 6 -72 Q 30 -62 34 -44',
+  wHairB: 'M 8 -82 Q 38 -82 52 -68 M 6 -72 Q 34 -68 44 -52',
+  wBody: 'M -30 -44 Q -40 -20 -34 6 M -28 -32 Q -46 -12 -62 20 M -18 8 L -30 34 L -50 38 L -60 32',
+  wCapeA: 'M -14 -46 Q 36 -42 76 -18 L 62 -12 L 68 2 L 50 0 L 52 14 L 34 10 L 26 20',
+  wCapeB: 'M -14 -46 Q 34 -50 82 -34 L 68 -24 L 80 -12 L 58 -10 L 62 4 L 40 4 L 26 20',
+  broom: 'M -150 34 L 70 6',
+  wTorso: 'M -30 -44 Q -40 -20 -34 6 L 26 20 L -14 -46 Z',
+  wHead: 'M -39 -62 a 19 19 0 1 0 38 0 a 19 19 0 1 0 -38 0',
+  bristles: 'M 68 0 Q 116 -18 156 -22 Q 166 4 156 30 Q 112 34 70 14 Z M 76 6 L 150 2',
   pin: 'M 0 24 C -14 8 -20 -2 -20 -10 A 20 20 0 1 1 20 -10 C 20 -2 14 8 0 24 Z M -7 -10 a 7 7 0 1 0 14 0 a 7 7 0 1 0 -14 0'
 };
 const P = {};
@@ -136,23 +149,34 @@ function makeElements() {
   text('top', NEON.white, 'COLÉGIO POLITÉCNICO', `40px ${FN}`, 40, 540, 118, 7, .5, { light: .16 });
   text('sub', NEON.purple, 'ENSINO MÉDIO', `30px ${FN}`, 30, 540, 170, 10, .75, { light: .16, fault: true });
 
-  const G = [540, 452, 1.12, 0];
-  icon('ghost', NEON.ice, G, ['ghost'], 175, 1.0, { lw: 7, light: .5 });
-  icon('eyes', NEON.ice, G, ['eyesOpen', 'eyesShut'], 80, 1.15, { lw: 6, light: 0 });
-  icon('mouth', NEON.ice, G, ['mouth'], 40, 1.2, { lw: 6, light: 0 });
-  icon('arms', NEON.ice, G, ['armsDown', 'armsUp'], 170, 1.25, { lw: 7, light: .12 });
-  icon('cheeks', NEON.pink, G, ['cheeks'], 90, 1.32, { lw: 5, light: .06 });
-  icon('moon', NEON.yellow, [880, 298, 1, -.32], ['moon'], 80, 1.45, { lw: 7, light: .4 });
-  [[282, 252, .8, -.2], [708, 240, .55, .15], [168, 642, 1, -.1], [946, 480, .72, .22]].forEach((t, i) =>
-    icon('bat' + i, NEON.purple, t, ['batUp', 'batDown'], 90, 1.55 + i * .14, { lw: 6, light: .26, phase: i * .37 }));
-  icon('spider', NEON.green, [200, 408, 1.05, 0], ['spider'], 60, 1.75, { lw: 5, light: .2, moves: true });
-  icon('legs', NEON.green, [200, 408, 1.05, 0], ['legsA', 'legsB'], 64, 1.8, { lw: 4.5, light: 0, moves: true });
-  const PK = [815, 628, .95, .06];
-  icon('pumpkin', NEON.orange, PK, ['pumpkin'], 110, 2.05, { lw: 7, light: .42 });
-  icon('stem', NEON.green, PK, ['stem'], 110, 2.1, { lw: 6, light: .05 });
-  icon('face', NEON.yellow, PK, ['faceA', 'faceB'], 70, 2.2, { lw: 5, light: .1 });
+  icon('moon', NEON.yellow, [760, 362, 1.25, 0], ['fullMoon'], 108, 1.0, { lw: 7, light: .5, fill: true });
+  const WT = [764, 366, 1.35, 0], WB = { box: [764 - 212, 366 - 202, 764 + 232, 366 + 76], moves: 'witch' };
+  icon('wBroom', NEON.orange, WT, ['broom'], 0, 1.25, { lw: 6, light: .1, ...WB });
+  icon('wBristles', NEON.yellow, WT, ['bristles'], 0, 1.3, { lw: 5, light: .12, ...WB });
+  icon('wCape', NEON.purple, WT, ['wCapeA', 'wCapeB'], 0, 1.35, { lw: 6, light: .26, ...WB });
+  icon('wBody', NEON.purple, WT, ['wBody'], 0, 1.38, { lw: 6, light: 0, ...WB });
+  icon('wHat', NEON.purple, WT, ['wHat'], 0, 1.42, { lw: 6, light: .08, ...WB });
+  icon('wHair', NEON.orange, WT, ['wHairA', 'wHairB'], 0, 1.46, { lw: 5, light: .04, ...WB });
+  icon('wFace', NEON.green, WT, ['wFace'], 0, 1.5, { lw: 5, light: .06, ...WB });
 
-  text('festa', NEON.pink, 'Festa de', `150px ${FSC}`, 150, 540, 846, 0, 2.45, { light: .4, coreA: .92 });
+  const G = [300, 456, .92, 0];
+  icon('ghost', NEON.ice, G, ['ghost'], 175, 1.6, { lw: 7, light: .46 });
+  icon('eyes', NEON.ice, G, ['eyesOpen', 'eyesShut'], 80, 1.72, { lw: 6, light: 0 });
+  icon('mouth', NEON.ice, G, ['mouth'], 40, 1.76, { lw: 6, light: 0 });
+  icon('arms', NEON.ice, G, ['armsDown', 'armsUp'], 170, 1.8, { lw: 7, light: .1 });
+  icon('cheeks', NEON.pink, G, ['cheeks'], 90, 1.86, { lw: 5, light: .05 });
+  [[540, 478, .55, .1], [966, 540, .7, .2], [130, 664, .82, -.1]].forEach((t, i) =>
+    icon('bat' + i, NEON.purple, t, ['batUp', 'batDown'], 90, 1.9 + i * .12, { lw: 6, light: .24, phase: i * .37 }));
+  icon('spider', NEON.green, [100, 398, .95, 0], ['spider'], 60, 2.0, { lw: 5, light: .18, moves: 'spider' });
+  icon('legs', NEON.green, [100, 398, .95, 0], ['legsA', 'legsB'], 64, 2.04, { lw: 4.5, light: 0, moves: 'spider' });
+  [[610, 640, 1.1, .04, 'faceA', 'faceB'], [858, 672, .78, .1, 'faceC', 'faceB'], [400, 674, .6, -.12, 'faceA', 'faceC']].forEach(([x, y, sc, rot, fa, fb], i) => {
+    const PK = [x, y, sc, rot], on = 2.2 + i * .12;
+    icon('pk' + i, NEON.orange, PK, ['pumpkin'], 110, on, { lw: 7, light: .4 });
+    icon('stem' + i, NEON.green, PK, ['stem'], 110, on + .05, { lw: 6, light: .04 });
+    icon('face' + i, NEON.yellow, PK, [fa, fb], 70, on + .14, { lw: 5, light: .1, candle: true });
+  });
+
+  text('festa', NEON.pink, 'Festa de', `150px ${FSC}`, 150, 540, 846, 0, 2.6, { light: .4, coreA: .92 });
 
   // HALLOWEEN, letra por letra
   const CW = 936, track = 10;
@@ -163,7 +187,7 @@ function makeElements() {
   let lx = 540 - textWidth(font, 'HALLOWEEN', tr) / 2;
   [...'HALLOWEEN'].forEach((ch, i) => {
     const w = MEASURE.measureText(ch).width;
-    add({ id: 'L' + i, kind: 'text', c: NEON.orange, str: ch, font, px: lx + w / 2, py: 1008, track: 0, on: 2.75 + i * .08,
+    add({ id: 'L' + i, kind: 'text', c: NEON.orange, str: ch, font, px: lx + w / 2, py: 1008, track: 0, on: 2.85 + i * .08,
       box: [lx, 1008 - TS * .86, lx + w, 1008 + TS * .28], light: .2, coreA: .78, fault: i === 5 });
     lx += w + tr;
   });
@@ -198,17 +222,18 @@ function makeElements() {
     .forEach((lines, c) => lines.forEach((s, i) => PRINT.push({ font: body, str: s, x: c ? 780 : 300, y: 1690 + i * 42, align: 'center', a: .9 })));
   PRINT.push({ font: `400 28px ${FB}`, str: 'Para o corpo docente, a direção e os estudantes do Ensino Médio.', x: 540, y: 1856, align: 'center', a: .66 });
 
-  text('boo', NEON.pink, 'BOO!', `84px ${FN}`, 84, 540, 262, 6, 1e9, { light: .3, coreA: .85, hidden: true });
+  text('boo', NEON.pink, 'BOO!', `78px ${FN}`, 78, 300, 292, 6, 1e9, { light: .3, coreA: .85, hidden: true });
+  text('haha', NEON.green, 'HA HA HA!', `44px ${FN}`, 44, 500, 250, 6, 1e9, { light: .25, coreA: .85, hidden: true });
 
   // as caixas dos ícones vêm do centro e de um raio aproximado
   ELS.forEach(e => {
     if (!e.box && e.t) { const [x, y, s] = e.t, r = e.r * s; e.box = [x - r, y - r, x + r, y + r]; }
     if (e.id === 'ghost' || e.id === 'arms') { const [x, y, s] = e.t; e.box = [x - 155 * s, y - 155 * s, x + 155 * s, y + 160 * s]; }
   });
-  BY.spider.box = BY.legs.box = [150, 350, 250, 470];
+  { const [x, y] = BY.spider.t; BY.spider.box = BY.legs.box = [x - 50, y - 58, x + 50, y + 62]; }
 
   const r = rng(13);
-  STARS = [[110, 290, 1], [965, 192, .8], [410, 214, .62], [988, 612, .6], [96, 790, .72], [664, 712, .5], [52, 470, .55], [600, 178, .45]]
+  STARS = [[56, 262, .9], [560, 330, .5], [984, 184, .8], [1012, 404, .6], [40, 532, .6], [470, 548, .5], [994, 772, .62], [82, 772, .7]]
     .map(([x, y, s]) => ({ x, y, s, ph: r() * TAU, sp: 1.2 + r() * 1.6 }));
 }
 
@@ -243,6 +268,11 @@ function paintNeon(x, e, fi, sc) {
     x.shadowBlur = 0; x.globalAlpha = e.coreA ?? .9; x.fillStyle = c.core; draw();
   } else {
     const { list, s } = shapeOf(x, e, fi), lw = e.lw / s;
+    if (e.fill) {
+      const g = x.createRadialGradient(-20, -20, 0, 0, 0, 100);
+      g.addColorStop(0, rgba(c.glow, .42)); g.addColorStop(.7, rgba(c.glow, .2)); g.addColorStop(1, rgba(c.glow, .08));
+      x.fillStyle = g; x.beginPath(); x.arc(0, 0, 100, 0, TAU); x.fill();
+    }
     const stroke = () => list.forEach(p => x.stroke(p));
     x.shadowColor = c.glow;
     x.shadowBlur = 42 * sc; x.strokeStyle = rgba(c.glow, .4); x.lineWidth = lw * 2.4; stroke();
@@ -254,7 +284,7 @@ function paintNeon(x, e, fi, sc) {
 }
 
 function paintGlass(x, e) {
-  if (e.hidden) return;
+  if (e.hidden || e.moves) return;
   for (let fi = 0; fi < variants(e); fi++) {
     for (const pass of (fi ? [1] : [0, 1])) {
       x.save(); x.lineCap = 'round'; x.lineJoin = 'round';
@@ -377,7 +407,7 @@ function render(x, kit, S) {
   lc.globalCompositeOperation = 'lighter';
   ELS.forEach(e => {
     const on = S.on[e.id] || 0; if (on <= 0 || e.light <= 0) return;
-    const [x0, y0, x1, y1] = e.box, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 + (e.moves ? S.spiderDy : 0);
+    const o = e.moves ? S.off[e.moves] : null, [x0, y0, x1, y1] = e.box, cx = (x0 + x1) / 2 + (o ? o.x : 0), cy = (y0 + y1) / 2 + (o ? o.y : 0);
     const rad = clamp(Math.max(x1 - x0, y1 - y0) * .85 + 150, 200, 720);
     const gg = lc.createRadialGradient(cx, cy, 0, cx, cy, rad);
     gg.addColorStop(0, rgba(e.c.glow, e.light * on)); gg.addColorStop(.4, rgba(e.c.glow, e.light * on * .35)); gg.addColorStop(1, rgba(e.c.glow, 0));
@@ -395,7 +425,7 @@ function render(x, kit, S) {
   else { x.save(); x.setTransform(sc, 0, 0, sc, 0, 0); ELS.forEach(e => paintGlass(x, e)); x.restore(); }
 
   // fio da aranha
-  const sp = BY.spider, sdy = S.spiderDy;
+  const sp = BY.spider, sdy = S.off.spider.y;
   x.save(); x.setTransform(sc, 0, 0, sc, 0, 0);
   const son = S.on.spider || 0;
   x.strokeStyle = 'rgba(210,220,240,.12)'; x.lineWidth = 1.6;
@@ -412,10 +442,12 @@ function render(x, kit, S) {
   // neons acesos
   x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'lighter';
   ELS.forEach(e => {
+    if (e.id === 'wBroom') drawWitchBacking(x, S, sc);
     const on = S.on[e.id] || 0; if (on <= .002) return;
     const L = kit.neon[e.id][Math.min(S.frame[e.id] || 0, kit.neon[e.id].length - 1)];
     x.globalAlpha = Math.min(1, on);
-    x.drawImage(L.c, Math.round(L.ox * sc), Math.round((L.oy + (e.moves ? sdy : 0)) * sc));
+    const o = e.moves ? S.off[e.moves] : null;
+    x.drawImage(L.c, Math.round((L.ox + (o ? o.x : 0)) * sc), Math.round((L.oy + (o ? o.y : 0)) * sc));
   });
   x.restore();
 
@@ -450,7 +482,37 @@ function render(x, kit, S) {
   else { x.save(); x.setTransform(sc, 0, 0, sc, 0, 0); paintOverlay(x, kit.grain); x.restore(); }
 }
 
+function drawWitchBacking(x, S, sc) {
+  const o = S.off.witch, [tx, ty, s] = BY.wBody.t;
+  x.save(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+  x.setTransform(sc, 0, 0, sc, 0, 0); x.translate(tx + o.x + 4 / s, ty + o.y + 6 / s); x.scale(s, s);
+  x.lineCap = 'round'; x.lineJoin = 'round';
+  for (const pass of [0, 1]) {
+    if (pass) x.translate(-4 / s, -6 / s);
+    x.fillStyle = x.strokeStyle = pass ? '#0c0912' : 'rgba(0,0,0,.45)';
+    [P.wHead, P.wHat, P.wTorso, P.bristles, P[BY.wCape.frames[S.frame.wCape || 0]]].forEach(p => x.fill(p));
+    x.lineWidth = 16 / s;
+    [P.wHat, P.wFace, P.wBody, P.broom, P.bristles, P[BY.wCape.frames[S.frame.wCape || 0]], P[BY.wHair.frames[S.frame.wHair || 0]]].forEach(p => x.stroke(p));
+  }
+  x.restore();
+}
+
+function drawWitchShadow(x, f) {
+  const s = f.s / 40;
+  x.save(); x.translate(f.x, f.y); x.scale(f.dir * s, s); x.rotate(-.08 + Math.sin(f.ph * .2) * .05);
+  x.fillStyle = 'rgba(6,4,9,.95)'; x.strokeStyle = 'rgba(6,4,9,.95)'; x.lineCap = 'round';
+  x.lineWidth = 4; x.beginPath(); x.moveTo(-44, 10); x.lineTo(34, 0); x.stroke();
+  x.beginPath(); x.moveTo(30, -4); x.lineTo(56, -12); x.lineTo(60, 4); x.lineTo(56, 14); x.lineTo(30, 6); x.closePath(); x.fill();
+  x.beginPath(); x.moveTo(-14, 6); x.quadraticCurveTo(-18, -20, -6, -30); x.lineTo(4, -30); x.quadraticCurveTo(26, -22, 34, -8 + Math.sin(f.ph) * 4); x.lineTo(22, -2); x.lineTo(20, 6); x.closePath(); x.fill();
+  x.beginPath(); x.arc(-8, -36, 7, 0, TAU); x.fill();
+  x.beginPath(); x.moveTo(-22, -40); x.lineTo(10, -46); x.lineTo(2, -50); x.lineTo(8, -70); x.lineTo(-10, -48); x.closePath(); x.fill();
+  x.beginPath(); x.moveTo(-14, -38); x.lineTo(-22, -32); x.lineTo(-13, -31); x.fill();
+  x.lineWidth = 4; x.beginPath(); x.moveTo(-10, 6); x.lineTo(-18, 20); x.lineTo(-28, 20); x.stroke();
+  x.restore();
+}
+
 function drawFlyer(x, f) {
+  if (f.witch) return drawWitchShadow(x, f);
   const s = f.s, flap = Math.sin(f.ph) * .9;
   x.save(); x.translate(f.x, f.y); x.rotate(f.rot || 0);
   x.fillStyle = 'rgba(6,4,9,.94)';
@@ -479,17 +541,17 @@ function flick(t, t0, seed) {
 function stillState() {
   const on = {}, frame = {};
   ELS.forEach(e => { on[e.id] = e.hidden ? 0 : 1; frame[e.id] = 0; });
-  frame.arms = 1; frame.bat1 = 1; frame.bat3 = 1;
+  frame.arms = 1; frame.bat1 = 1; frame.wCape = 0; frame.face1 = 0;
   return {
-    on, frame, spiderDy: 0, print: 1,
+    on, frame, off: { spider: { x: 0, y: 0 }, witch: { x: 0, y: 0 } }, print: 1,
     stars: STARS.map((s, i) => [.95, .7, .5, .85, .6, .45, .55, .4][i]),
-    flyers: [{ x: 842, y: 258, s: 15, ph: 1.2, rot: -.2 }, { x: 900, y: 318, s: 11, ph: -.6, rot: -.15 }, { x: 806, y: 316, s: 9, ph: .4, rot: -.25 }],
+    flyers: [{ x: 960, y: 250, s: 13, ph: 1.2, rot: -.2 }, { x: 1010, y: 292, s: 9, ph: -.6, rot: -.15 }, { x: 640, y: 196, s: 8, ph: .4, rot: .2 }],
     motes: (() => { const r = rng(5); return Array.from({ length: 26 }, () => ({ x: 80 + r() * 920, y: 220 + r() * 820, r: .7 + r() * 1.6, a: .08 + r() * .18 })); })()
   };
 }
 
-const live = { on: {}, frame: {}, spiderDy: 0, print: 0, stars: [], flyers: [], motes: [] };
-const ctl = { blinkAt: 0, blinkUntil: 0, faceUntil: 0, faceAt: 0, booAt: -1e9, surgeAt: -1e9, dropAt: -1e9, flockAt: 0, faults: {} };
+const live = { on: {}, frame: {}, off: { spider: { x: 0, y: 0 }, witch: { x: 0, y: 0 } }, print: 0, stars: [], flyers: [], motes: [] };
+const ctl = { blinkAt: 0, blinkUntil: 0, faces: [0, 1, 2].map(i => ({ at: 3000 + i * 2200, until: 0 })), booAt: -1e9, hahaAt: -1e9, surgeAt: -1e9, dropAt: -1e9, flockAt: 0, witchAt: 0, faults: {} };
 let T = REDUCED ? INTRO : 0, introDone = false, last = 0;
 
 function seedMotes() {
@@ -517,15 +579,27 @@ function update(dt, now) {
   live.frame.arms = booP >= 0 && booP < 1.6 ? 1 : Math.floor(secs / .6) % 2;
   if (now > ctl.blinkAt) { ctl.blinkUntil = now + 170; ctl.blinkAt = now + 2600 + Math.random() * 3800; }
   live.frame.eyes = now < ctl.blinkUntil && !(booP >= 0 && booP < 1.6) ? 1 : 0;
-  for (let i = 0; i < 4; i++) live.frame['bat' + i] = Math.floor(secs * 3.2 + BY['bat' + i].phase * 2) % 2;
-  if (introDone && now > ctl.faceAt) { ctl.faceUntil = now + 700; ctl.faceAt = now + 4200 + Math.random() * 4000; }
-  live.frame.face = now < ctl.faceUntil ? 1 : 0;
+  for (let i = 0; BY['bat' + i]; i++) live.frame['bat' + i] = Math.floor(secs * 3.2 + BY['bat' + i].phase * 2) % 2;
+  ctl.faces.forEach((f, i) => {
+    if (introDone && now > f.at) { f.until = now + 800; f.at = now + 4000 + Math.random() * 5000; }
+    live.frame['face' + i] = now < f.until ? 1 : 0;
+    live.on['face' + i] *= .88 + .07 * Math.sin(secs * 17 + i * 2) + .05 * Math.sin(secs * 31 + i * 5);
+  });
+  // bruxa: entra voando na abertura, depois flutua; ao toque dá um rasante e gargalha
+  const hp = (now - ctl.hahaAt) / 1000, laughing = hp >= 0 && hp < 1.8;
+  live.on.haha = laughing ? flick(hp, 0, 9) * (hp > 1.55 ? 1 - (hp - 1.55) / .25 : 1) : 0;
+  const enter = introDone ? 0 : 1 - ease(span(t, 1.2, 2.5));
+  const swoop = laughing ? Math.sin(Math.min(1, hp / 1.1) * TAU) * 34 : 0;
+  live.off.witch.x = enter * 520 - swoop;
+  live.off.witch.y = (REDUCED ? 0 : Math.sin(secs * 1.6) * 7) - enter * 90 + (laughing ? Math.sin(Math.min(1, hp / 1.1) * Math.PI) * -16 : 0);
+  live.frame.wCape = Math.floor(secs / .28) % 2;
+  live.frame.wHair = Math.floor(secs / .28 + .5) % 2;
   live.frame.bubbles = Math.floor(secs / .5) % 2;
   live.frame.legs = Math.floor(secs / .34) % 2;
   // aranha sobe e desce
   const dp = (now - ctl.dropAt) / 1000;
   const drop = dp >= 0 && dp < 1.8 ? Math.sin(Math.min(1, dp / .35) * Math.PI / 2) * 130 * (dp < .6 ? 1 : 1 - ease((dp - .6) / 1.2)) : 0;
-  live.spiderDy = (REDUCED ? 0 : Math.sin(secs * 1.25) * 12) + drop;
+  live.off.spider.y = (REDUCED ? 0 : Math.sin(secs * 1.25) * 12) + drop;
   // estrelas
   live.stars = STARS.map((s, i) => introDone || t > 2.2 + i * .15 ? .55 + .45 * Math.sin(secs * s.sp + s.ph) : 0);
   // texto impresso
@@ -539,10 +613,14 @@ function update(dt, now) {
   // revoada
   if (!REDUCED && introDone && now > ctl.flockAt) {
     const n = 3 + (Math.random() * 3 | 0), y0 = 260 + Math.random() * 380, dir = Math.random() < .5 ? 1 : -1;
-    for (let k = 0; k < n; k++) live.flyers.push({ x: dir > 0 ? -60 - k * 70 - Math.random() * 40 : W + 60 + k * 70, y: y0 + (Math.random() - .5) * 120, base: 0,
-      vx: dir * (230 + Math.random() * 120), s: 10 + Math.random() * 12, ph: Math.random() * TAU, fr: 16 + Math.random() * 6, amp: 18 + Math.random() * 26, rot: dir * -.12 });
-    live.flyers.forEach(f => { f.base = f.y; });
+    for (let k = 0; k < n; k++) { const y = y0 + (Math.random() - .5) * 120; live.flyers.push({ x: dir > 0 ? -60 - k * 70 - Math.random() * 40 : W + 60 + k * 70, y, base: y,
+      vx: dir * (230 + Math.random() * 120), s: 10 + Math.random() * 12, ph: Math.random() * TAU, fr: 16 + Math.random() * 6, amp: 18 + Math.random() * 26, rot: dir * -.12 }); }
     ctl.flockAt = now + 7000 + Math.random() * 6000;
+  }
+  if (!REDUCED && introDone && now > ctl.witchAt) {
+    const dir = Math.random() < .5 ? 1 : -1, y = 230 + Math.random() * 300;
+    live.flyers.push({ witch: true, dir: -dir, x: dir > 0 ? -120 : W + 120, y, base: y, vx: dir * (200 + Math.random() * 80), s: 30 + Math.random() * 18, ph: 0, fr: 6, amp: 26 });
+    ctl.witchAt = now + 11000 + Math.random() * 9000;
   }
   live.flyers.forEach(f => { f.x += f.vx * dt; f.ph += f.fr * dt; f.y = f.base + Math.sin(f.x / 90) * f.amp; });
   live.flyers = live.flyers.filter(f => f.x > -260 && f.x < W + 260);
@@ -560,9 +638,10 @@ function fit() {
 }
 function finishIntro(now) {
   T = Math.max(T, INTRO); introDone = true;
-  ctl.blinkAt = now + 2000; ctl.faceAt = now + 3500; ctl.flockAt = now + 1500;
+  ctl.blinkAt = now + 2000; ctl.flockAt = now + 1500; ctl.witchAt = now + 6000;
+  ctl.faces.forEach((f, i) => { f.at = now + 2500 + i * 2300; });
   const h = document.getElementById('hint');
-  h.textContent = (TOUCH ? 'toque' : 'clique') + ' no fantasma, na abóbora e na aranha';
+  h.textContent = (TOUCH ? 'toque' : 'clique') + ' na bruxa, no fantasma e nas abóboras';
   h.classList.add('on'); document.getElementById('bar').classList.add('on');
   setTimeout(() => h.classList.remove('on'), 8000);
   setTimeout(prepareShare, 1500);
@@ -582,9 +661,11 @@ cv.addEventListener('pointerdown', e => {
   const now = performance.now();
   if (!introDone) { finishIntro(now); return; }
   const p = toPoster(e);
-  if (inBox(p, BY.ghost.box, 10)) { ctl.booAt = now; ctl.blinkUntil = 0; }
-  else if (inBox(p, BY.pumpkin.box, 20)) { ctl.faceUntil = now + 1400; }
-  else if (inBox(p, BY.spider.box, 30, live.spiderDy)) { if (now - ctl.dropAt > 1800) ctl.dropAt = now; }
+  const pk = [0, 1, 2].find(i => inBox(p, BY['pk' + i].box, 10));
+  if (inBox(p, BY.wBody.box, 0, live.off.witch.y) && Math.hypot(p.x - 760, p.y - 362 - live.off.witch.y) < 230) { if (now - ctl.hahaAt > 1800) ctl.hahaAt = now; }
+  else if (inBox(p, BY.ghost.box, 6)) { ctl.booAt = now; ctl.blinkUntil = 0; }
+  else if (pk !== undefined) { ctl.faces[pk].until = now + 1400; }
+  else if (inBox(p, BY.spider.box, 30, live.off.spider.y)) { if (now - ctl.dropAt > 1800) ctl.dropAt = now; }
   else ctl.surgeAt = now;
 });
 window.addEventListener('keydown', e => { if (!introDone && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) finishIntro(performance.now()); });
